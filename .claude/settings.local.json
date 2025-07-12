@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:uptimerobot.com)",
+      "WebFetch(domain:www.pingdom.com)",
+      "WebFetch(domain:www.statuscake.com)",
+      "WebFetch(domain:betteruptime.com)",
+      "Bash(curl:*)",
+      "Bash(node:*)",
+      "Bash(rm:*)",
+      "Bash(npm run dev:*)",
+      "Bash(find:*)",
+      "Bash(true)",
+      "Bash(npm install:*)",
+      "Bash(lsof:*)",
+      "Bash(pkill:*)",
+      "Bash(npx supabase:*)",
+      "Bash(npm run:*)",
+      "Bash(NEXT_PUBLIC_SUPABASE_URL=\"https://dansnqlhbpisyocxrotb.supabase.co\" SUPABASE_SERVICE_ROLE_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhbnNucWxoYnBpc3lvY3hyb3RiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjI4NTI5OSwiZXhwIjoyMDY3ODYxMjk5fQ.f9EjQdw4O2nh4ILgibqVJxAUW0hGhQR1La3KP9Q44WY\" node run-db-migration.js)"
+    ],
+    "deny": []
+  }
+}
