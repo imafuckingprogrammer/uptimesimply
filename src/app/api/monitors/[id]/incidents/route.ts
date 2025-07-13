@@ -10,7 +10,7 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '10')
     const { id } = params
 
-    const { data: incidents, error } = await supabaseAdmin
+    const { data: incidents, error } = await supabaseAdmin!
       .from('incidents')
       .select('*')
       .eq('monitor_id', id)

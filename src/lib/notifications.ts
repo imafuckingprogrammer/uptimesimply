@@ -4,11 +4,12 @@ import { Monitor } from '@/types'
 interface NotificationData {
   monitorName: string
   monitorUrl: string
-  status: 'down' | 'up'
+  status: 'down' | 'up' | 'test'
   responseTime?: number
   statusCode?: number
   errorMessage?: string
   downtime?: string
+  testMode?: boolean
 }
 
 interface NotificationResult {
@@ -23,9 +24,9 @@ export async function sendSlackNotification(
   data: NotificationData
 ): Promise<NotificationResult> {
   try {
-    const color = data.status === 'down' ? '#ff0000' : '#00ff00'
-    const emoji = data.status === 'down' ? '🚨' : '✅'
-    const statusText = data.status === 'down' ? 'DOWN' : 'BACK UP'
+    const color = data.status === 'down' ? '#ff0000' : data.status === 'test' ? '#0066cc' : '#00ff00'
+    const emoji = data.status === 'down' ? '🚨' : data.status === 'test' ? '🧪' : '✅'
+    const statusText = data.status === 'down' ? 'DOWN' : data.status === 'test' ? 'TEST ALERT' : 'BACK UP'
     
     const payload = {
       attachments: [
@@ -98,9 +99,9 @@ export async function sendDiscordNotification(
   data: NotificationData
 ): Promise<NotificationResult> {
   try {
-    const color = data.status === 'down' ? 0xff0000 : 0x00ff00
-    const emoji = data.status === 'down' ? '🚨' : '✅'
-    const statusText = data.status === 'down' ? 'DOWN' : 'BACK UP'
+    const color = data.status === 'down' ? 0xff0000 : data.status === 'test' ? 0x0066cc : 0x00ff00
+    const emoji = data.status === 'down' ? '🚨' : data.status === 'test' ? '🧪' : '✅'
+    const statusText = data.status === 'down' ? 'DOWN' : data.status === 'test' ? 'TEST ALERT' : 'BACK UP'
     
     const embed = {
       title: `${emoji} ${data.monitorName} is ${statusText}`,
@@ -181,8 +182,8 @@ export async function sendSMSNotification(
       throw new Error('Twilio credentials not configured')
     }
 
-    const emoji = data.status === 'down' ? '🚨' : '✅'
-    const statusText = data.status === 'down' ? 'DOWN' : 'BACK UP'
+    const emoji = data.status === 'down' ? '🚨' : data.status === 'test' ? '🧪' : '✅'
+    const statusText = data.status === 'down' ? 'DOWN' : data.status === 'test' ? 'TEST ALERT' : 'BACK UP'
     
     let message = `${emoji} ${data.monitorName} is ${statusText}\\n${data.monitorUrl}`
     
@@ -191,6 +192,8 @@ export async function sendSMSNotification(
       if (data.statusCode) {
         message += `\\nStatus: ${data.statusCode}`
       }
+    } else if (data.status === 'test') {
+      message += `\\nThis is a test notification. Response Time: ${data.responseTime || 250}ms`
     } else if (data.downtime) {
       message += `\\nDowntime: ${data.downtime}`
     }
@@ -229,7 +232,7 @@ export async function sendWebhookNotification(
 ): Promise<NotificationResult> {
   try {
     const payload = {
-      event: data.status === 'down' ? 'monitor.down' : 'monitor.up',
+      event: data.status === 'down' ? 'monitor.down' : data.status === 'test' ? 'monitor.test' : 'monitor.up',
       timestamp: new Date().toISOString(),
       monitor: {
         name: data.monitorName,
@@ -238,7 +241,8 @@ export async function sendWebhookNotification(
         response_time: data.responseTime,
         status_code: data.statusCode,
         error_message: data.errorMessage,
-        downtime_duration: data.downtime
+        downtime_duration: data.downtime,
+        test_mode: data.testMode || false
       }
     }
 
@@ -267,43 +271,53 @@ export async function sendNotifications(
   data: NotificationData
 ): Promise<{ success: boolean; results: Record<string, NotificationResult> }> {
   const results: Record<string, NotificationResult> = {}
-  const channels = monitor.notification_channels || ['email']
   
-  // Send notifications to all configured channels
-  const promises = channels.map(async (channel) => {
-    switch (channel) {
-      case 'slack':
-        if (monitor.slack_webhook_url) {
-          results.slack = await sendSlackNotification(monitor.slack_webhook_url, data)
-        }
-        break
-        
-      case 'discord':
-        if (monitor.discord_webhook_url) {
-          results.discord = await sendDiscordNotification(monitor.discord_webhook_url, data)
-        }
-        break
-        
-      case 'sms':
-        if (monitor.alert_sms) {
-          results.sms = await sendSMSNotification(monitor.alert_sms, data)
-        }
-        break
-        
-      case 'webhook':
-        if (monitor.webhook_url) {
-          results.webhook = await sendWebhookNotification(monitor.webhook_url, data)
-        }
-        break
-        
-      case 'email':
-        // Email is handled by existing email system
-        results.email = { success: true }
-        break
-    }
-  })
+  // Check all possible notification channels
+  const channelPromises: Promise<void>[] = []
   
-  await Promise.all(promises)
+  // Slack notification
+  if (monitor.slack_webhook_url) {
+    channelPromises.push(
+      sendSlackNotification(monitor.slack_webhook_url, data).then(result => {
+        results.slack = result
+      })
+    )
+  }
+  
+  // Discord notification  
+  if (monitor.discord_webhook_url) {
+    channelPromises.push(
+      sendDiscordNotification(monitor.discord_webhook_url, data).then(result => {
+        results.discord = result
+      })
+    )
+  }
+  
+  // SMS notification
+  if (monitor.alert_sms) {
+    channelPromises.push(
+      sendSMSNotification(monitor.alert_sms, data).then(result => {
+        results.sms = result
+      })
+    )
+  }
+  
+  // Webhook notification
+  if (monitor.webhook_url) {
+    channelPromises.push(
+      sendWebhookNotification(monitor.webhook_url, data).then(result => {
+        results.webhook = result
+      })
+    )
+  }
+  
+  // Email notification (mark as available if configured)
+  if (monitor.alert_email) {
+    results.email = { success: true }
+  }
+  
+  // Wait for all notifications to complete
+  await Promise.all(channelPromises)
   
   // Check if at least one notification succeeded
   const overallSuccess = Object.values(results).some(result => result.success)

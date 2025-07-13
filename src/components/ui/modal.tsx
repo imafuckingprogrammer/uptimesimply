@@ -49,10 +49,10 @@ export function Modal({ isOpen, onClose, title, children, size = 'lg' }: ModalPr
   }
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="fixed inset-0 z-[9999]">
       {/* Backdrop - Full coverage with soft blur */}
       <div 
-        className="absolute inset-0 bg-black/30 backdrop-blur-[1px] transition-opacity duration-200"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200"
         onClick={onClose}
       />
       

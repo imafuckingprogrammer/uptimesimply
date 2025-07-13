@@ -18,6 +18,11 @@ export async function POST(request: NextRequest) {
 
     console.log('🔒 Starting SSL and domain checks...')
 
+    // Check if supabaseAdmin is available
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not available')
+    }
+
     // Get all active monitors with SSL/domain checking enabled
     const { data: monitors, error: monitorsError } = await supabaseAdmin
       .from('monitors')

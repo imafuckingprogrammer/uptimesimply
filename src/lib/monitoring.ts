@@ -243,8 +243,12 @@ export function determineOverallStatus(locationResults: Array<{ status: string }
     r.status === 'down' || r.status === 'timeout' || r.status === 'error'
   ).length
   
-  // Site is considered down if 2+ locations report it as down
-  return downCount >= 2 ? 'down' : 'up'
+  const totalLocations = locationResults.length
+  
+  // Site is considered down if majority of locations report it as down
+  // For 5 locations: 3+ must agree, for 3 locations: 2+ must agree
+  const threshold = totalLocations >= 5 ? 3 : 2
+  return downCount >= threshold ? 'down' : 'up'
 }
 
 export function calculateAverageResponseTime(locationResults: Array<{ status: string; responseTime?: number }>) {

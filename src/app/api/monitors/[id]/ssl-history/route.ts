@@ -9,7 +9,7 @@ export async function GET(
     const { id } = params
 
     // Get SSL check history for the monitor
-    const { data: sslChecks, error } = await supabaseAdmin
+    const { data: sslChecks, error } = await supabaseAdmin!
       .from('ssl_checks')
       .select('*')
       .eq('monitor_id', id)

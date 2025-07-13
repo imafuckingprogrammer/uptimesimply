@@ -3,6 +3,11 @@ import { supabaseAdmin } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if supabaseAdmin is available
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not available')
+    }
+
     // Test if enhanced columns already exist
     const { data: testData, error: testError } = await supabaseAdmin
       .from('monitors')

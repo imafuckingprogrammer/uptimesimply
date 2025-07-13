@@ -85,7 +85,7 @@ export async function checkSSLCertificate(hostname: string, port: number = 443):
         let keySize: number | null = null
         if (cert.pubkey) {
           const publicKey = crypto.createPublicKey(cert.pubkey)
-          keySize = publicKey.asymmetricKeySize ? publicKey.asymmetricKeySize * 8 : null
+          keySize = (publicKey as any).asymmetricKeySize ? (publicKey as any).asymmetricKeySize * 8 : null
         }
 
         socket.end()
@@ -98,7 +98,7 @@ export async function checkSSLCertificate(hostname: string, port: number = 443):
           key_size: keySize,
           san_domains: sanDomains,
           warning_level: warningLevel,
-          error_message: socket.authorized ? null : socket.authorizationError || 'Certificate validation failed'
+          error_message: socket.authorized ? null : socket.authorizationError?.message || 'Certificate validation failed'
         })
       } catch (error: any) {
         socket.end()

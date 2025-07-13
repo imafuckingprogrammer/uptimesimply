@@ -10,7 +10,7 @@ interface PageProps {
 }
 
 async function getMonitorData(id: string) {
-  const { data: monitor, error } = await supabaseAdmin
+  const { data: monitor, error } = await supabaseAdmin!
     .from('monitors')
     .select('*')
     .eq('id', id)
@@ -26,26 +26,26 @@ async function getMonitorData(id: string) {
   const days7Ago = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
   const days30Ago = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-  const { data: checks24h } = await supabaseAdmin
+  const { data: checks24h } = await supabaseAdmin!
     .from('uptime_checks')
     .select('status, response_time')
     .eq('monitor_id', id)
     .gte('checked_at', day24Ago.toISOString())
 
-  const { data: checks7d } = await supabaseAdmin
+  const { data: checks7d } = await supabaseAdmin!
     .from('uptime_checks')
     .select('status')
     .eq('monitor_id', id)
     .gte('checked_at', days7Ago.toISOString())
 
-  const { data: checks30d } = await supabaseAdmin
+  const { data: checks30d } = await supabaseAdmin!
     .from('uptime_checks')
     .select('status')
     .eq('monitor_id', id)
     .gte('checked_at', days30Ago.toISOString())
 
   // Get recent incidents
-  const { data: incidents } = await supabaseAdmin
+  const { data: incidents } = await supabaseAdmin!
     .from('incidents')
     .select('*')
     .eq('monitor_id', id)

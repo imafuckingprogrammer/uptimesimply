@@ -10,7 +10,7 @@ export async function GET(
   try {
     const { id } = params
 
-    const { data: monitor, error } = await supabaseAdmin
+    const { data: monitor, error } = await supabaseAdmin!
       .from('monitors')
       .select('*')
       .eq('id', id)
@@ -87,7 +87,7 @@ export async function PUT(
     if (alert_sms !== undefined) updateData.alert_sms = alert_sms
     if (webhook_url !== undefined) updateData.webhook_url = webhook_url
 
-    const { data: monitor, error } = await supabaseAdmin
+    const { data: monitor, error } = await supabaseAdmin!
       .from('monitors')
       .update(updateData)
       .eq('id', id)
@@ -111,7 +111,7 @@ export async function DELETE(
   try {
     const { id } = params
 
-    const { error } = await supabaseAdmin
+    const { error } = await supabaseAdmin!
       .from('monitors')
       .delete()
       .eq('id', id)

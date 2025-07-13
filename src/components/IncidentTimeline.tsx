@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react'
 import { Incident } from '@/types'
 import { formatDuration } from '@/lib/utils'
 import { Loader } from '@/components/ui/loader'
-import { AlertTriangle, CheckCircle, Clock } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { IncidentDiagnostics } from '@/components/IncidentDiagnostics'
+import { AlertTriangle, CheckCircle, Clock, Activity } from 'lucide-react'
 
 interface IncidentTimelineProps {
   monitorId: string
@@ -14,6 +16,8 @@ interface IncidentTimelineProps {
 export function IncidentTimeline({ monitorId, limit = 10 }: IncidentTimelineProps) {
   const [incidents, setIncidents] = useState<Incident[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null)
+  const [showDiagnostics, setShowDiagnostics] = useState(false)
 
   useEffect(() => {
     fetchIncidents()
@@ -29,6 +33,16 @@ export function IncidentTimeline({ monitorId, limit = 10 }: IncidentTimelineProp
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleViewDiagnostics = (incidentId: string) => {
+    setSelectedIncidentId(incidentId)
+    setShowDiagnostics(true)
+  }
+
+  const handleCloseDiagnostics = () => {
+    setShowDiagnostics(false)
+    setSelectedIncidentId(null)
   }
 
   if (loading) {
@@ -110,10 +124,33 @@ export function IncidentTimeline({ monitorId, limit = 10 }: IncidentTimelineProp
                   </div>
                 )}
               </div>
+              
+              {/* Enhanced Diagnostics Button */}
+              <div className="mt-3 pt-3 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleViewDiagnostics(incident.id)}
+                  className="text-xs"
+                >
+                  <Activity className="h-3 w-3 mr-1" />
+                  View Diagnostics
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       ))}
+      
+      {/* Enhanced Incident Diagnostics Modal */}
+      {selectedIncidentId && (
+        <IncidentDiagnostics
+          monitorId={monitorId}
+          incidentId={selectedIncidentId}
+          isOpen={showDiagnostics}
+          onClose={handleCloseDiagnostics}
+        />
+      )}
     </div>
   )
 }

@@ -1,13 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { Monitor, UptimeStats } from '@/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { StatusIndicator } from '@/components/StatusIndicator'
 import { formatUptime, formatResponseTime, formatDuration } from '@/lib/utils'
-import { Trash2, ExternalLink, Clock, TrendingUp, BarChart3, Settings, Shield } from 'lucide-react'
+import { Trash2, ExternalLink, Clock, TrendingUp, BarChart3, Settings, Shield, Target, Send, Loader2 } from 'lucide-react'
 
 interface MonitorCardProps {
   monitor: Monitor
@@ -19,6 +21,10 @@ interface MonitorCardProps {
 export function MonitorCard({ monitor, stats, onDelete, onEdit }: MonitorCardProps) {
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
+  const [sendingTest, setSendingTest] = useState(false)
+  const [testResult, setTestResult] = useState<string | null>(null)
+  const [slaData, setSlaData] = useState<any>(null)
+  const [slaLoading, setSlaLoading] = useState(false)
 
   const handleDelete = async () => {
     if (!confirm('Are you sure you want to delete this monitor?')) return
@@ -50,6 +56,52 @@ export function MonitorCard({ monitor, stats, onDelete, onEdit }: MonitorCardPro
   const handleViewSSL = () => {
     router.push(`/monitor/${monitor.id}/ssl`)
   }
+
+  const handleSendTest = async () => {
+    setSendingTest(true)
+    setTestResult(null)
+    
+    try {
+      const response = await fetch('/api/test-notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ monitorId: monitor.id })
+      })
+      
+      const data = await response.json()
+      
+      if (response.ok) {
+        setTestResult('Test notification sent successfully!')
+      } else {
+        setTestResult(data.error || 'Failed to send test notification')
+      }
+    } catch (error) {
+      setTestResult('Error sending test notification')
+    } finally {
+      setSendingTest(false)
+      setTimeout(() => setTestResult(null), 5000)
+    }
+  }
+
+  const fetchQuickSLA = async () => {
+    setSlaLoading(true)
+    try {
+      const response = await fetch(`/api/monitors/${monitor.id}/sla?period=weekly&targets=99.9`)
+      if (response.ok) {
+        const data = await response.json()
+        setSlaData(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch SLA:', error)
+    } finally {
+      setSlaLoading(false)
+    }
+  }
+
+  // Fetch SLA data on mount
+  React.useEffect(() => {
+    fetchQuickSLA()
+  }, [monitor.id])
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -204,8 +256,8 @@ export function MonitorCard({ monitor, stats, onDelete, onEdit }: MonitorCardPro
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Domain expires:</span>
                     <span className={`font-medium ${
-                      monitor.domain_days_until_expiry <= 7 ? 'text-red-600' : 
-                      monitor.domain_days_until_expiry <= 30 ? 'text-yellow-600' : 
+                      (monitor.domain_days_until_expiry || 0) <= 7 ? 'text-red-600' : 
+                      (monitor.domain_days_until_expiry || 0) <= 30 ? 'text-yellow-600' : 
                       'text-green-600'
                     }`}>
                       {monitor.domain_days_until_expiry} days
@@ -215,9 +267,58 @@ export function MonitorCard({ monitor, stats, onDelete, onEdit }: MonitorCardPro
               </div>
             )}
 
+            {/* SLA Status */}
+            {slaData && slaData.calculations && slaData.calculations.length > 0 && (
+              <div className="pt-2 border-t">
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <Target className="h-3 w-3" />
+                    SLA (7d):
+                  </span>
+                  <Badge 
+                    variant={slaData.calculations[0].met ? 'success' : 'destructive'}
+                    className="text-xs"
+                  >
+                    {slaData.calculations[0].met ? 'Met' : 'Breach'}
+                  </Badge>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {(slaData.calculations[0].actualUptime * 100).toFixed(2)}% uptime
+                </div>
+              </div>
+            )}
+
+            {/* Test Notification */}
+            <div className="pt-2 border-t">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Quick Actions:</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSendTest}
+                  disabled={sendingTest}
+                  className="h-6 px-2 text-xs"
+                >
+                  {sendingTest ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <>
+                      <Send className="h-3 w-3 mr-1" />
+                      Test Alert
+                    </>
+                  )}
+                </Button>
+              </div>
+              {testResult && (
+                <div className={`text-xs mt-1 ${testResult.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
+                  {testResult}
+                </div>
+              )}
+            </div>
+
             {/* Last Checked */}
             {monitor.last_checked && (
-              <div className="text-xs text-muted-foreground">
+              <div className="text-xs text-muted-foreground pt-1">
                 Last checked: {new Date(monitor.last_checked).toLocaleString()}
               </div>
             )}

@@ -26,7 +26,7 @@ export async function GET(
     console.log(`Fetching chart data for monitor ${id}, period: ${hours ? hours + 'h' : days + 'd'}, startDate: ${startDate.toISOString()}`)
 
     // Get uptime checks grouped by day
-    const { data: checks, error } = await supabaseAdmin
+    const { data: checks, error } = await supabaseAdmin!
       .from('uptime_checks')
       .select('checked_at, status, response_time')
       .eq('monitor_id', id)

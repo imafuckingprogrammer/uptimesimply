@@ -6,6 +6,13 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      )
+    }
+
     const { id } = params
     const now = new Date()
     const day24Ago = new Date(now.getTime() - 24 * 60 * 60 * 1000)
@@ -13,26 +20,26 @@ export async function GET(
     const days30Ago = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
     // Get uptime checks for different time periods
-    const { data: checks24h } = await supabaseAdmin
+    const { data: checks24h } = await supabaseAdmin!
       .from('uptime_checks')
       .select('status, response_time, checked_at')
       .eq('monitor_id', id)
       .gte('checked_at', day24Ago.toISOString())
 
-    const { data: checks7d } = await supabaseAdmin
+    const { data: checks7d } = await supabaseAdmin!
       .from('uptime_checks')
       .select('status, checked_at')
       .eq('monitor_id', id)
       .gte('checked_at', days7Ago.toISOString())
 
-    const { data: checks30d } = await supabaseAdmin
+    const { data: checks30d } = await supabaseAdmin!
       .from('uptime_checks')
       .select('status, checked_at')
       .eq('monitor_id', id)
       .gte('checked_at', days30Ago.toISOString())
 
     // Get current incident
-    const { data: currentIncident } = await supabaseAdmin
+    const { data: currentIncident } = await supabaseAdmin!
       .from('incidents')
       .select('*')
       .eq('monitor_id', id)
@@ -41,7 +48,7 @@ export async function GET(
       .limit(1)
 
     // Get total incidents count
-    const { count: totalIncidents } = await supabaseAdmin
+    const { count: totalIncidents } = await supabaseAdmin!
       .from('incidents')
       .select('*', { count: 'exact', head: true })
       .eq('monitor_id', id)

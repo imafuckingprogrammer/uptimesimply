@@ -2,6 +2,57 @@ import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
+// Slack notification function
+export async function sendSlackAlert(webhookUrl: string, message: string, status: 'down' | 'up') {
+  try {
+    const color = status === 'down' ? '#dc2626' : '#16a34a'
+    const emoji = status === 'down' ? '🔴' : '🟢'
+    
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        attachments: [{
+          color,
+          text: `${emoji} ${message}`,
+          mrkdwn_in: ['text']
+        }]
+      })
+    })
+    
+    return { success: response.ok }
+  } catch (error) {
+    console.error('Failed to send Slack alert:', error)
+    return { success: false, error }
+  }
+}
+
+// Discord notification function  
+export async function sendDiscordAlert(webhookUrl: string, message: string, status: 'down' | 'up') {
+  try {
+    const color = status === 'down' ? 0xdc2626 : 0x16a34a
+    const emoji = status === 'down' ? '🔴' : '🟢'
+    
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        embeds: [{
+          title: `${emoji} SimpleUptime Alert`,
+          description: message,
+          color,
+          timestamp: new Date().toISOString()
+        }]
+      })
+    })
+    
+    return { success: response.ok }
+  } catch (error) {
+    console.error('Failed to send Discord alert:', error)  
+    return { success: false, error }
+  }
+}
+
 interface AlertEmailData {
   monitorName: string
   monitorUrl: string

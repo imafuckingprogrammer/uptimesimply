@@ -5,7 +5,7 @@ import { Monitor } from '@/types'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, Send, Loader2 } from 'lucide-react'
 
 interface EditMonitorDialogProps {
   monitor: Monitor | null
@@ -34,6 +34,8 @@ interface EditMonitorDialogProps {
 
 export function EditMonitorDialog({ monitor, isOpen, onClose, onSave }: EditMonitorDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSendingTest, setIsSendingTest] = useState(false)
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
@@ -69,7 +71,7 @@ export function EditMonitorDialog({ monitor, isOpen, onClose, onSave }: EditMoni
         auth_username: monitor.auth_username || '',
         auth_password: monitor.auth_password || '',
         auth_token: monitor.auth_token || '',
-        port_number: monitor.port_number || '',
+        port_number: monitor.port_number?.toString() || '',
         slack_webhook_url: monitor.slack_webhook_url || '',
         discord_webhook_url: monitor.discord_webhook_url || '',
         alert_sms: monitor.alert_sms || '',
@@ -91,6 +93,56 @@ export function EditMonitorDialog({ monitor, isOpen, onClose, onSave }: EditMoni
       console.error('Failed to update monitor:', error)
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleSendTestAlert = async () => {
+    if (!monitor) return
+
+    setIsSendingTest(true)
+    setTestResult(null)
+
+    try {
+      // Determine which channels to test based on current form data
+      const channels = {
+        email: !!formData.alert_email,
+        slack: !!formData.slack_webhook_url,
+        discord: !!formData.discord_webhook_url,
+        sms: !!formData.alert_sms,
+        webhook: !!formData.webhook_url
+      }
+
+      const response = await fetch('/api/test-notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          monitorId: monitor.id,
+          channels
+        }),
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        setTestResult({
+          success: true,
+          message: result.message || 'Test notifications sent successfully!'
+        })
+      } else {
+        setTestResult({
+          success: false,
+          message: result.error || 'Failed to send test notifications'
+        })
+      }
+    } catch (error) {
+      setTestResult({
+        success: false,
+        message: 'Network error occurred while sending test notifications'
+      })
+    } finally {
+      setIsSendingTest(false)
     }
   }
 
@@ -299,7 +351,35 @@ export function EditMonitorDialog({ monitor, isOpen, onClose, onSave }: EditMoni
 
             {/* Notifications */}
             <div className="space-y-3">
-              <h4 className="font-medium text-sm">Additional Notifications (Optional)</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-sm">Additional Notifications (Optional)</h4>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSendTestAlert}
+                  disabled={isSendingTest || !monitor}
+                  className="flex items-center gap-2"
+                >
+                  {isSendingTest ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Send className="h-3 w-3" />
+                  )}
+                  {isSendingTest ? 'Sending...' : 'Send Test Alert'}
+                </Button>
+              </div>
+
+              {/* Test Result */}
+              {testResult && (
+                <div className={`p-3 rounded-md text-sm ${
+                  testResult.success 
+                    ? 'bg-green-50 text-green-800 border border-green-200' 
+                    : 'bg-red-50 text-red-800 border border-red-200'
+                }`}>
+                  {testResult.message}
+                </div>
+              )}
               
               <div>
                 <label htmlFor="slack_webhook_url" className="text-sm font-medium block mb-2">Slack Webhook URL</label>
@@ -333,6 +413,21 @@ export function EditMonitorDialog({ monitor, isOpen, onClose, onSave }: EditMoni
                   onChange={(e) => setFormData(prev => ({ ...prev, alert_sms: e.target.value }))}
                 />
               </div>
+
+              <div>
+                <label htmlFor="webhook_url" className="text-sm font-medium block mb-2">Custom Webhook URL</label>
+                <Input
+                  id="webhook_url"
+                  type="url"
+                  placeholder="https://your-api.com/webhook"
+                  value={formData.webhook_url}
+                  onChange={(e) => setFormData(prev => ({ ...prev, webhook_url: e.target.value }))}
+                />
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                ⏰ Test alerts are rate-limited to 1 per hour per monitor to prevent spam.
+              </p>
             </div>
           </div>
         )}

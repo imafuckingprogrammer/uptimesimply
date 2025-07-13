@@ -8,10 +8,14 @@ import { Button } from '@/components/ui/button'
 import { StatusIndicator } from '@/components/StatusIndicator'
 import { UptimeChart } from '@/components/UptimeChart'
 import { ResponseTimeChart } from '@/components/ResponseTimeChart'
+import { StatusDistributionChart } from '@/components/StatusDistributionChart'
+import { PerformanceTrendsChart } from '@/components/PerformanceTrendsChart'
+import { ResponseTimeDistributionChart } from '@/components/ResponseTimeDistributionChart'
 import { IncidentTimeline } from '@/components/IncidentTimeline'
+import { SLADashboard } from '@/components/SLADashboard'
 import { LoadingState } from '@/components/ui/loader'
 import { formatUptime, formatResponseTime } from '@/lib/utils'
-import { ArrowLeft, ExternalLink, Calendar, BarChart3, AlertTriangle, Shield } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Calendar, BarChart3, AlertTriangle, Shield, Target } from 'lucide-react'
 
 interface PageProps {
   params: { id: string }
@@ -24,6 +28,7 @@ export default function MonitorDetailsPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true)
   const [chartDays, setChartDays] = useState(7)
   const [chartMode, setChartMode] = useState<'days' | 'today'>('days')
+  const [showSLA, setShowSLA] = useState(false)
 
   useEffect(() => {
     fetchMonitorData()
@@ -95,6 +100,10 @@ export default function MonitorDetailsPage({ params }: PageProps) {
             SSL Details
           </Button>
         )}
+        <Button variant="outline" onClick={() => setShowSLA(!showSLA)}>
+          <Target className="h-4 w-4 mr-2" />
+          {showSLA ? 'Hide' : 'Show'} SLA
+        </Button>
         <Button variant="outline" onClick={() => window.open(`/status/${monitor.id}`, '_blank')}>
           View Public Status
         </Button>
@@ -167,6 +176,17 @@ export default function MonitorDetailsPage({ params }: PageProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* SLA Dashboard */}
+      {showSLA && (
+        <div>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            Service Level Agreement (SLA) Monitoring
+          </h2>
+          <SLADashboard monitorId={monitor.id} />
+        </div>
+      )}
 
       {/* Uptime Chart */}
       <Card>
@@ -249,6 +269,30 @@ export default function MonitorDetailsPage({ params }: PageProps) {
           />
         </CardContent>
       </Card>
+
+      {/* Advanced Analytics Section */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-semibold">Advanced Analytics</h2>
+        </div>
+        
+        {/* Performance Overview - Two charts side by side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <StatusDistributionChart 
+            monitorId={monitor.id} 
+            period={chartMode === 'today' ? '1d' : `${chartDays}d`}
+          />
+          <ResponseTimeDistributionChart 
+            monitorId={monitor.id}
+          />
+        </div>
+        
+        {/* Performance Trends - Full width */}
+        <PerformanceTrendsChart 
+          monitorId={monitor.id}
+        />
+      </div>
 
       {/* Incident Timeline */}
       <Card>
