@@ -28,7 +28,7 @@ export default function SignUpPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (!authLoading && user) {
-      router.push('/')
+      router.push('/demo')
     }
   }, [user, authLoading, router])
 
@@ -70,7 +70,7 @@ export default function SignUpPage() {
           setSuccess(result.message)
         } else {
           // Logged in immediately
-          router.push('/')
+          router.push('/demo')
         }
       } else {
         setError(result.error || 'Sign up failed')

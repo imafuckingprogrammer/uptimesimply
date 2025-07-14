@@ -229,27 +229,37 @@ export interface SimpleSSLResult {
 const RATE_LIMIT_DELAY = 150000 // 2.5 minutes between requests
 const lastRequestTimes = new Map<string, number>()
 
+// Cache for SSL Labs results to avoid repeated requests
+const sslLabsCache = new Map<string, { result: SimpleSSLResult; timestamp: number }>()
+const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours
+
+// Cleanup expired cache entries periodically
+setInterval(() => {
+  const now = Date.now()
+  for (const [hostname, cached] of sslLabsCache.entries()) {
+    if (now - cached.timestamp > CACHE_DURATION) {
+      sslLabsCache.delete(hostname)
+    }
+  }
+}, 60 * 60 * 1000) // Cleanup every hour
+
 export async function analyzeSSLWithSSLLabs(hostname: string): Promise<SimpleSSLResult> {
   try {
+    // Check cache first
+    const cached = sslLabsCache.get(hostname)
+    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+      console.log(`📋 Using cached SSL Labs result for ${hostname}`)
+      return cached.result
+    }
+
     // Check rate limiting
     const lastRequest = lastRequestTimes.get(hostname) || 0
     const timeSinceLastRequest = Date.now() - lastRequest
     
     if (timeSinceLastRequest < RATE_LIMIT_DELAY) {
-      return {
-        certificate_valid: false,
-        expires_at: null,
-        days_until_expiry: null,
-        issuer: null,
-        grade: null,
-        algorithm: null,
-        key_size: null,
-        san_domains: [],
-        warning_level: 'none',
-        error_message: `Rate limited. Wait ${Math.ceil((RATE_LIMIT_DELAY - timeSinceLastRequest) / 60000)} minutes`,
-        has_warnings: false,
-        vulnerabilities: []
-      }
+      console.log(`⏰ SSL Labs rate limited for ${hostname}, falling back to simple check`)
+      // Use simple SSL check instead of failing
+      return await getSimpleSSLInfo(hostname)
     }
 
     // Start analysis - use cache if available
@@ -299,7 +309,7 @@ export async function analyzeSSLWithSSLLabs(hostname: string): Promise<SimpleSSL
 
     console.log(`✅ SSL Labs analysis complete for ${hostname}. Grade: ${endpoint.grade}`)
 
-    return {
+    const result: SimpleSSLResult = {
       certificate_valid: simpleInfo.certificate_valid,
       expires_at: simpleInfo.expires_at,
       days_until_expiry: simpleInfo.days_until_expiry,
@@ -313,6 +323,11 @@ export async function analyzeSSLWithSSLLabs(hostname: string): Promise<SimpleSSL
       has_warnings: endpoint.hasWarnings || vulnerabilities.length > 0,
       vulnerabilities // Use SSL Labs vulnerabilities
     }
+
+    // Cache the successful result
+    sslLabsCache.set(hostname, { result, timestamp: Date.now() })
+    
+    return result
 
   } catch (error: any) {
     console.error(`❌ SSL Labs analysis failed for ${hostname}:`, error.message)

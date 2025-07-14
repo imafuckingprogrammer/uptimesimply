@@ -29,6 +29,7 @@ interface EditMonitorDialogProps {
     alert_sms: string
     webhook_url: string
     notification_channels: string[]
+    status_page_public: boolean
   }) => Promise<void>
 }
 
@@ -54,7 +55,8 @@ export function EditMonitorDialog({ monitor, isOpen, onClose, onSave }: EditMoni
     discord_webhook_url: '',
     alert_sms: '',
     webhook_url: '',
-    notification_channels: ['email'] as string[]
+    notification_channels: ['email'] as string[],
+    status_page_public: true
   })
 
   useEffect(() => {
@@ -76,7 +78,8 @@ export function EditMonitorDialog({ monitor, isOpen, onClose, onSave }: EditMoni
         discord_webhook_url: monitor.discord_webhook_url || '',
         alert_sms: monitor.alert_sms || '',
         webhook_url: monitor.webhook_url || '',
-        notification_channels: monitor.notification_channels || ['email']
+        notification_channels: monitor.notification_channels || ['email'],
+        status_page_public: monitor.status_page_public !== false
       })
     }
   }, [monitor])
@@ -259,6 +262,25 @@ export function EditMonitorDialog({ monitor, isOpen, onClose, onSave }: EditMoni
             </div>
           </div>
         )}
+
+        {/* Status Page Visibility */}
+        <div className="space-y-3">
+          <div className="flex items-center space-x-2">
+            <input
+              id="edit-status-page-public"
+              type="checkbox"
+              checked={formData.status_page_public}
+              onChange={(e) => setFormData(prev => ({ ...prev, status_page_public: e.target.checked }))}
+              className="rounded border-gray-300"
+            />
+            <label htmlFor="edit-status-page-public" className="text-sm font-medium">
+              Public Status Page
+            </label>
+          </div>
+          <p className="text-xs text-muted-foreground pl-6">
+            When enabled, anyone with the link can view your status page at /status/{monitor?.id}
+          </p>
+        </div>
 
         {/* Advanced Options Toggle */}
         <div className="pt-2 border-t">

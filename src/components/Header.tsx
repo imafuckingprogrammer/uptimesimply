@@ -50,6 +50,39 @@ export function Header() {
           </div>
           
           <div className="flex items-center gap-4">
+            {/* Navigation Links */}
+            {user ? (
+              <nav className="hidden md:flex items-center gap-6">
+                <Link 
+                  href="/demo" 
+                  className={`text-sm font-medium hover:text-primary transition-colors ${
+                    pathname === '/demo' ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                >
+                  Dashboard
+                </Link>
+                <Link 
+                  href="/settings" 
+                  className={`text-sm font-medium hover:text-primary transition-colors ${
+                    pathname === '/settings' ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                >
+                  Settings
+                </Link>
+              </nav>
+            ) : (
+              <nav className="hidden md:flex items-center gap-6">
+                <Link 
+                  href="/demo" 
+                  className={`text-sm font-medium hover:text-primary transition-colors ${
+                    pathname === '/demo' ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                >
+                  Demo
+                </Link>
+              </nav>
+            )}
+            
             <ThemeToggle />
             
             {user ? (
@@ -100,6 +133,15 @@ export function Header() {
                           </div>
                           
                           <Link
+                            href="/demo"
+                            className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-muted transition-colors md:hidden"
+                            onClick={() => setShowUserMenu(false)}
+                          >
+                            <Shield className="h-4 w-4" />
+                            Dashboard
+                          </Link>
+                          
+                          <Link
                             href="/settings"
                             className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-muted transition-colors"
                             onClick={() => setShowUserMenu(false)}
@@ -134,7 +176,6 @@ export function Header() {
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground hidden sm:block">Demo Mode</span>
                 <Link href="/auth/login">
                   <Button variant="ghost" size="sm">
                     Sign In
@@ -142,7 +183,7 @@ export function Header() {
                 </Link>
                 <Link href="/auth/signup">
                   <Button size="sm">
-                    Sign Up
+                    Start Free Trial
                   </Button>
                 </Link>
               </div>

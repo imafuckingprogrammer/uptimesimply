@@ -20,6 +20,11 @@ async function getMonitorData(id: string) {
     return null
   }
 
+  // Check if status page is public
+  if (monitor.status_page_public === false) {
+    return { isPrivate: true }
+  }
+
   // Get uptime stats
   const now = new Date()
   const day24Ago = new Date(now.getTime() - 24 * 60 * 60 * 1000)
@@ -85,6 +90,30 @@ export default async function StatusPage({ params }: PageProps) {
 
   if (!data) {
     notFound()
+  }
+
+  // Handle private status pages
+  if ('isPrivate' in data) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="bg-card rounded-lg shadow-sm border p-8 max-w-md w-full mx-4">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold mb-2">Private Status Page</h1>
+            <p className="text-muted-foreground mb-6">
+              This status page is private and not publicly accessible.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              If you're the owner, you can make it public in your monitor settings.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const { monitor, stats, incidents } = data

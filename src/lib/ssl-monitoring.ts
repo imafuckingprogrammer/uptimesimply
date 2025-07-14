@@ -149,37 +149,103 @@ export async function checkSSLCertificate(hostname: string, port: number = 443):
 
 export async function checkDomainExpiration(domain: string): Promise<DomainCheckResult> {
   try {
-    // Use a WHOIS API service (you'll need to sign up for one)
-    // For now, we'll use a simple DNS lookup to get nameservers
+    const whoisJson = require('whois-json')
     const dns = require('dns').promises
     
+    // Get nameservers via DNS
+    let nameservers: string[] = []
     try {
-      const nameservers = await dns.resolveNs(domain)
+      nameservers = await dns.resolveNs(domain)
+    } catch {
+      // Continue with WHOIS even if DNS fails
+    }
+    
+    try {
+      // Perform WHOIS lookup
+      const whoisData = await whoisJson(domain)
       
-      // In a real implementation, you'd use a WHOIS API like:
-      // - whoisjsonapi.com (free tier)
-      // - whois.whoisxmlapi.com 
-      // - ip2whois.com
+      if (!whoisData) {
+        return {
+          domain_valid: false,
+          expires_at: null,
+          days_until_expiry: null,
+          registrar: null,
+          name_servers: nameservers,
+          warning_level: 'critical',
+          error_message: 'No WHOIS data found for domain'
+        }
+      }
       
-      // For demo purposes, we'll return a placeholder
+      // Extract expiration date - try multiple common field names
+      let expirationDate: Date | null = null
+      const expirationFields = [
+        'registryExpiryDate',
+        'registrarExpirationDate', 
+        'expirationDate',
+        'expiry',
+        'expires',
+        'expiryDate',
+        'registrar_registration_expiration_date',
+        'registry_expiry_date'
+      ]
+      
+      for (const field of expirationFields) {
+        const value = whoisData[field]
+        if (value) {
+          const date = new Date(value)
+          if (!isNaN(date.getTime())) {
+            expirationDate = date
+            break
+          }
+        }
+      }
+      
+      // Extract registrar - try multiple common field names
+      let registrar: string | null = null
+      const registrarFields = ['registrar', 'registrarName', 'sponsoring_registrar']
+      for (const field of registrarFields) {
+        if (whoisData[field]) {
+          registrar = whoisData[field]
+          break
+        }
+      }
+      
+      // Calculate days until expiry
+      let daysUntilExpiry: number | null = null
+      let warningLevel: 'none' | 'warning' | 'critical' = 'none'
+      
+      if (expirationDate) {
+        const now = new Date()
+        daysUntilExpiry = Math.floor((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        
+        // Set warning levels
+        if (daysUntilExpiry <= 7) {
+          warningLevel = 'critical'
+        } else if (daysUntilExpiry <= 30) {
+          warningLevel = 'warning'
+        }
+      }
+      
       return {
         domain_valid: true,
-        expires_at: null, // Would get from WHOIS API
-        days_until_expiry: null,
-        registrar: null, // Would get from WHOIS API
+        expires_at: expirationDate ? expirationDate.toISOString() : null,
+        days_until_expiry: daysUntilExpiry,
+        registrar: registrar,
         name_servers: nameservers,
-        warning_level: 'none',
-        error_message: 'Domain expiration check requires WHOIS API integration'
+        warning_level: warningLevel,
+        error_message: expirationDate ? null : 'Could not parse domain expiration date from WHOIS data'
       }
-    } catch (error: any) {
+      
+    } catch (whoisError: any) {
+      // Fallback: if WHOIS fails, still return nameserver info
       return {
-        domain_valid: false,
+        domain_valid: nameservers.length > 0,
         expires_at: null,
         days_until_expiry: null,
         registrar: null,
-        name_servers: [],
-        warning_level: 'critical',
-        error_message: error.message || 'Domain lookup failed'
+        name_servers: nameservers,
+        warning_level: 'none',
+        error_message: `WHOIS lookup failed: ${whoisError.message}`
       }
     }
   } catch (error: any) {
@@ -204,12 +270,62 @@ export async function checkPort(hostname: string, port: number, protocol: 'tcp' 
   
   return new Promise((resolve) => {
     if (protocol === 'udp') {
-      // UDP port checking is more complex and often unreliable
-      resolve({
-        status: 'error',
-        response_time: Date.now() - startTime,
-        error_message: 'UDP port checking not implemented yet'
+      // UDP port checking using dgram socket
+      const dgram = require('dgram')
+      const socket = dgram.createSocket('udp4')
+      
+      // Set timeout for UDP check
+      const timeout = setTimeout(() => {
+        socket.close()
+        resolve({
+          status: 'timeout',
+          response_time: Date.now() - startTime,
+          error_message: `UDP port ${port} timeout after 10 seconds`
+        })
+      }, 10000)
+      
+      socket.on('error', (error: any) => {
+        clearTimeout(timeout)
+        socket.close()
+        
+        // ECONNREFUSED typically means port is closed
+        const status = error.code === 'ECONNREFUSED' ? 'closed' : 'error'
+        resolve({
+          status,
+          response_time: Date.now() - startTime,
+          error_message: error.message
+        })
       })
+      
+      socket.on('message', (message: Buffer, remote: any) => {
+        // Received a response - port is open
+        clearTimeout(timeout)
+        socket.close()
+        resolve({
+          status: 'open',
+          response_time: Date.now() - startTime,
+          error_message: null
+        })
+      })
+      
+      // Send a small UDP packet to test the port
+      const testMessage = Buffer.from('test')
+      socket.send(testMessage, port, hostname, (error: any) => {
+        if (error) {
+          clearTimeout(timeout)
+          socket.close()
+          resolve({
+            status: 'error',
+            response_time: Date.now() - startTime,
+            error_message: error.message
+          })
+        }
+        // For UDP, we don't get immediate feedback, so we wait for either:
+        // 1. A response message (port is open and service responds)
+        // 2. An ICMP error (port is closed)
+        // 3. Timeout (port may be open but service doesn't respond, or filtered)
+      })
+      
       return
     }
 

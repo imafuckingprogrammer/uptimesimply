@@ -102,55 +102,108 @@ export async function checkPingHealth(hostname: string, timeoutMs: number = 5000
   const startTime = Date.now()
   
   try {
-    // Use a simple TCP connection test as ping alternative
-    // (Real ping requires root privileges)
-    const url = hostname.startsWith('http') ? hostname : `https://${hostname}`
-    const host = new URL(url).hostname
+    // Extract hostname from URL if needed
+    let host = hostname
+    if (hostname.startsWith('http')) {
+      host = new URL(hostname).hostname
+    }
     
+    // Server-side: Use real ping when available
+    if (typeof window === 'undefined') {
+      try {
+        const ping = await import('ping')
+        const config = {
+          timeout: Math.floor(timeoutMs / 1000), // Convert to seconds
+          min_reply: 1,
+          extra: ['-c', '1'] // Send only 1 packet
+        }
+        
+        const result = await ping.promise.probe(host, config)
+        const responseTime = result.time === 'unknown' ? Date.now() - startTime : parseFloat(result.time)
+        
+        if (result.alive) {
+          return {
+            success: true,
+            status: 'up',
+            statusCode: null,
+            responseTime: Math.round(responseTime),
+            error: null
+          }
+        } else {
+          return {
+            success: false,
+            status: 'down',
+            statusCode: null,
+            responseTime: Math.round(responseTime),
+            error: 'Host unreachable via ping'
+          }
+        }
+      } catch (pingError: any) {
+        // Fallback to TCP connection test if ping fails
+        console.warn('Real ping failed, falling back to TCP test:', pingError.message)
+      }
+    }
+    
+    // Fallback: TCP connection test (works in browser and when ping fails)
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
     
-    // Try to establish a connection
-    const response = await fetch(`https://${host}`, {
-      method: 'HEAD',
-      signal: controller.signal,
-    }).catch(() => {
-      // If HTTPS fails, try HTTP
-      return fetch(`http://${host}`, {
+    try {
+      // Try TCP connection test via fetch with minimal data transfer
+      const response = await fetch(`https://${host}`, {
         method: 'HEAD',
         signal: controller.signal,
+        mode: 'no-cors' // Allow cross-origin requests without response data
+      }).catch(() => {
+        // If HTTPS fails, try HTTP
+        return fetch(`http://${host}`, {
+          method: 'HEAD',
+          signal: controller.signal,
+          mode: 'no-cors'
+        })
       })
-    })
-    
-    clearTimeout(timeoutId)
-    const responseTime = Date.now() - startTime
-    
-    return {
-      success: true,
-      status: 'up',
-      statusCode: response.status,
-      responseTime,
-      error: null
+      
+      clearTimeout(timeoutId)
+      const responseTime = Date.now() - startTime
+      
+      return {
+        success: true,
+        status: 'up',
+        statusCode: response.status || null,
+        responseTime,
+        error: null
+      }
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId)
+      const responseTime = Date.now() - startTime
+      
+      if (fetchError.name === 'AbortError') {
+        return {
+          success: false,
+          status: 'timeout',
+          statusCode: null,
+          responseTime,
+          error: `Connection timeout after ${timeoutMs}ms`
+        }
+      }
+      
+      return {
+        success: false,
+        status: 'down',
+        statusCode: null,
+        responseTime,
+        error: fetchError.message || 'Host unreachable'
+      }
     }
   } catch (error: any) {
     const responseTime = Date.now() - startTime
     
-    if (error.name === 'AbortError') {
-      return {
-        success: false,
-        status: 'timeout',
-        statusCode: null,
-        responseTime,
-        error: `Ping timeout after ${timeoutMs}ms`
-      }
-    }
-    
     return {
       success: false,
-      status: 'down',
+      status: 'error',
       statusCode: null,
       responseTime,
-      error: error.message || 'Host unreachable'
+      error: error.message || 'Ping check failed'
     }
   }
 }

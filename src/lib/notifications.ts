@@ -4,7 +4,7 @@ import { Monitor } from '@/types'
 interface NotificationData {
   monitorName: string
   monitorUrl: string
-  status: 'down' | 'up' | 'test'
+  status: 'down' | 'up' | 'test' | 'sla_breach'
   responseTime?: number
   statusCode?: number
   errorMessage?: string
@@ -24,9 +24,18 @@ export async function sendSlackNotification(
   data: NotificationData
 ): Promise<NotificationResult> {
   try {
-    const color = data.status === 'down' ? '#ff0000' : data.status === 'test' ? '#0066cc' : '#00ff00'
-    const emoji = data.status === 'down' ? '🚨' : data.status === 'test' ? '🧪' : '✅'
-    const statusText = data.status === 'down' ? 'DOWN' : data.status === 'test' ? 'TEST ALERT' : 'BACK UP'
+    const color = data.status === 'down' ? '#ff0000' : 
+                  data.status === 'test' ? '#0066cc' : 
+                  data.status === 'sla_breach' ? '#ff8c00' : 
+                  '#00ff00'
+    const emoji = data.status === 'down' ? '🚨' : 
+                  data.status === 'test' ? '🧪' : 
+                  data.status === 'sla_breach' ? '📊' : 
+                  '✅'
+    const statusText = data.status === 'down' ? 'DOWN' : 
+                       data.status === 'test' ? 'TEST ALERT' : 
+                       data.status === 'sla_breach' ? 'SLA BREACH' : 
+                       'BACK UP'
     
     const payload = {
       attachments: [
@@ -56,6 +65,12 @@ export async function sendSlackNotification(
                 value: data.statusCode.toString(),
                 short: true
               }] : [])
+            ] : data.status === 'sla_breach' ? [
+              {
+                title: 'SLA Breach Details',
+                value: data.errorMessage || 'SLA targets not met',
+                short: false
+              }
             ] : [
               {
                 title: 'Response Time',
@@ -99,9 +114,18 @@ export async function sendDiscordNotification(
   data: NotificationData
 ): Promise<NotificationResult> {
   try {
-    const color = data.status === 'down' ? 0xff0000 : data.status === 'test' ? 0x0066cc : 0x00ff00
-    const emoji = data.status === 'down' ? '🚨' : data.status === 'test' ? '🧪' : '✅'
-    const statusText = data.status === 'down' ? 'DOWN' : data.status === 'test' ? 'TEST ALERT' : 'BACK UP'
+    const color = data.status === 'down' ? 0xff0000 : 
+                  data.status === 'test' ? 0x0066cc : 
+                  data.status === 'sla_breach' ? 0xff8c00 : 
+                  0x00ff00
+    const emoji = data.status === 'down' ? '🚨' : 
+                  data.status === 'test' ? '🧪' : 
+                  data.status === 'sla_breach' ? '📊' : 
+                  '✅'
+    const statusText = data.status === 'down' ? 'DOWN' : 
+                       data.status === 'test' ? 'TEST ALERT' : 
+                       data.status === 'sla_breach' ? 'SLA BREACH' : 
+                       'BACK UP'
     
     const embed = {
       title: `${emoji} ${data.monitorName} is ${statusText}`,
@@ -129,6 +153,12 @@ export async function sendDiscordNotification(
             value: data.statusCode.toString(),
             inline: true
           }] : [])
+        ] : data.status === 'sla_breach' ? [
+          {
+            name: 'SLA Breach Details',
+            value: data.errorMessage || 'SLA targets not met',
+            inline: false
+          }
         ] : [
           {
             name: 'Response Time',
@@ -179,49 +209,62 @@ export async function sendSMSNotification(
     const fromNumber = process.env.TWILIO_PHONE_NUMBER
 
     if (!accountSid || !authToken || !fromNumber) {
-      throw new Error('Twilio credentials not configured')
+      throw new Error('Twilio credentials not configured. Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER environment variables.')
     }
 
-    const emoji = data.status === 'down' ? '🚨' : data.status === 'test' ? '🧪' : '✅'
-    const statusText = data.status === 'down' ? 'DOWN' : data.status === 'test' ? 'TEST ALERT' : 'BACK UP'
+    // Initialize Twilio client
+    const twilio = await import('twilio')
+    const client = twilio.default(accountSid, authToken)
+
+    const emoji = data.status === 'down' ? '🚨' : 
+                  data.status === 'test' ? '🧪' : 
+                  data.status === 'sla_breach' ? '📊' : 
+                  '✅'
+    const statusText = data.status === 'down' ? 'DOWN' : 
+                       data.status === 'test' ? 'TEST ALERT' : 
+                       data.status === 'sla_breach' ? 'SLA BREACH' : 
+                       'BACK UP'
     
-    let message = `${emoji} ${data.monitorName} is ${statusText}\\n${data.monitorUrl}`
+    let message = `${emoji} ${data.monitorName} is ${statusText}\n${data.monitorUrl}`
     
     if (data.status === 'down') {
-      message += `\\nError: ${data.errorMessage || 'Unknown error'}`
+      message += `\nError: ${data.errorMessage || 'Unknown error'}`
       if (data.statusCode) {
-        message += `\\nStatus: ${data.statusCode}`
+        message += `\nStatus: ${data.statusCode}`
       }
     } else if (data.status === 'test') {
-      message += `\\nThis is a test notification. Response Time: ${data.responseTime || 250}ms`
+      message += `\nThis is a test notification. Response Time: ${data.responseTime || 250}ms`
+    } else if (data.status === 'sla_breach') {
+      message += `\n${data.errorMessage || 'SLA targets not met'}`
     } else if (data.downtime) {
-      message += `\\nDowntime: ${data.downtime}`
+      message += `\nDowntime: ${data.downtime}`
+    }
+    
+    // Add timestamp and keep message under 160 characters for standard SMS
+    message += `\n${new Date().toLocaleTimeString()}`
+    
+    // Trim message if too long
+    if (message.length > 160) {
+      message = message.substring(0, 157) + '...'
     }
 
-    // Twilio API call
-    const credentials = Buffer.from(`${accountSid}:${authToken}`).toString('base64')
-    
-    const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${credentials}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        From: fromNumber,
-        To: phoneNumber,
-        Body: message,
-      }),
+    // Send SMS using official Twilio SDK
+    const result = await client.messages.create({
+      body: message,
+      from: fromNumber,
+      to: phoneNumber,
     })
 
-    if (!response.ok) {
-      throw new Error(`Twilio API error: ${response.status}`)
+    return { 
+      success: true, 
+      deliveryId: result.sid 
     }
-
-    const result = await response.json()
-    return { success: true, deliveryId: result.sid }
   } catch (error: any) {
-    return { success: false, error: error.message }
+    console.error('SMS notification failed:', error)
+    return { 
+      success: false, 
+      error: error.message || 'SMS delivery failed'
+    }
   }
 }
 
@@ -232,7 +275,10 @@ export async function sendWebhookNotification(
 ): Promise<NotificationResult> {
   try {
     const payload = {
-      event: data.status === 'down' ? 'monitor.down' : data.status === 'test' ? 'monitor.test' : 'monitor.up',
+      event: data.status === 'down' ? 'monitor.down' : 
+             data.status === 'test' ? 'monitor.test' : 
+             data.status === 'sla_breach' ? 'monitor.sla_breach' : 
+             'monitor.up',
       timestamp: new Date().toISOString(),
       monitor: {
         name: data.monitorName,

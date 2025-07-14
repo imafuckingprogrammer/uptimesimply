@@ -92,9 +92,9 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
-  // If user is logged in and trying to access auth pages, redirect to dashboard
+  // If user is logged in and trying to access auth pages, redirect to demo (dashboard)
   if (isAuthRoute && session) {
-    return NextResponse.redirect(new URL('/', req.url))
+    return NextResponse.redirect(new URL('/demo', req.url))
   }
 
   // For API routes that need authentication

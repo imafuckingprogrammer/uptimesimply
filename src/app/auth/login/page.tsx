@@ -26,7 +26,7 @@ export default function LoginPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (!authLoading && user) {
-      const redirectTo = searchParams.get('redirectTo') || '/'
+      const redirectTo = searchParams.get('redirectTo') || '/demo'
       router.push(redirectTo)
     }
   }, [user, authLoading, router, searchParams])
@@ -46,7 +46,7 @@ export default function LoginPage() {
       const result = await signIn(formData.email, formData.password)
       
       if (result.success) {
-        const redirectTo = searchParams.get('redirectTo') || '/'
+        const redirectTo = searchParams.get('redirectTo') || '/demo'
         router.push(redirectTo)
       } else {
         setError(result.error || 'Login failed')
@@ -194,7 +194,7 @@ export default function LoginPage() {
           </div>
           <p className="text-xs text-yellow-700">
             You can also continue using the{' '}
-            <Link href="/" className="font-medium underline">
+            <Link href="/demo" className="font-medium underline">
               demo version
             </Link>{' '}
             to explore all features without creating an account.

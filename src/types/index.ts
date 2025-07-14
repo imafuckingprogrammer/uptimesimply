@@ -36,6 +36,8 @@ export interface Monitor {
   discord_webhook_url?: string
   webhook_url?: string
   alert_sms?: string
+  // Status page visibility
+  status_page_public?: boolean
 }
 
 export interface UptimeCheck {
