@@ -119,30 +119,30 @@ export function getEnvBoolean(name: string, defaultValue?: boolean): boolean {
 // Common environment configurations
 export const COMMON_ENV_CONFIGS = {
   supabase: {
-    required: ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'],
-    optional: ['SUPABASE_SERVICE_ROLE_KEY']
+    required: ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'] as string[],
+    optional: ['SUPABASE_SERVICE_ROLE_KEY'] as string[]
   },
   
   twilio: {
-    required: ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_PHONE_NUMBER'],
-    optional: []
+    required: ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_PHONE_NUMBER'] as string[],
+    optional: [] as string[]
   },
   
   email: {
-    required: ['EMAIL_FROM'],
-    optional: ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASSWORD']
+    required: ['EMAIL_FROM'] as string[],
+    optional: ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASSWORD'] as string[]
   },
   
   app: {
-    required: ['NEXT_PUBLIC_APP_URL'],
-    optional: ['CRON_SECRET', 'NODE_ENV']
+    required: ['NEXT_PUBLIC_APP_URL'] as string[],
+    optional: ['CRON_SECRET', 'NODE_ENV'] as string[]
   },
   
   ssl: {
-    required: [],
-    optional: ['SSL_LABS_API_URL']
+    required: [] as string[],
+    optional: ['SSL_LABS_API_URL'] as string[]
   }
-} as const
+}
 
 /**
  * Validates all common environment variables
@@ -158,7 +158,7 @@ export function validateAllEnvironmentVariables(): ValidationResult {
   })
   
   return validateEnvironment({
-    required: [...new Set(allRequired)], // Remove duplicates
-    optional: [...new Set(allOptional)]
+    required: Array.from(new Set(allRequired)), // Remove duplicates
+    optional: Array.from(new Set(allOptional))
   })
 }

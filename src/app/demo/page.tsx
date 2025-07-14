@@ -89,7 +89,7 @@ export default function Dashboard() {
     alert_email: string
     ssl_enabled: boolean
     domain_enabled: boolean
-    monitor_type: 'http' | 'ping' | 'port'
+    monitor_type: 'http' | 'ping' | 'port' | 'heartbeat'
     request_method: string
     request_headers: string
     auth_type: 'none' | 'basic' | 'bearer' | 'header'

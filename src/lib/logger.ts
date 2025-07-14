@@ -13,7 +13,7 @@ export interface LogEntry {
 
 export class Logger {
   private context?: string
-  private minLevel: LogLevel
+  public minLevel: LogLevel
 
   constructor(context?: string, minLevel: LogLevel = 'info') {
     this.context = context

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { checkSSLCertificate, checkDomainExpiration, extractDomainFromUrl, extractRootDomain, extractPortFromUrl } from '@/lib/ssl-unified'
+import { analyzeSSLWithSSLLabs } from '@/lib/ssl-labs'
 import { sendSSLAlert, sendDomainAlert } from '@/lib/email'
 
 export async function GET() {
@@ -14,6 +15,9 @@ export async function POST(request: NextRequest) {
     if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    
+    // Allow manual triggering in development
+    console.log('SSL check triggered manually in development mode')
 
     console.log('🔒 Starting SSL and domain checks...')
 

@@ -126,7 +126,7 @@ export async function checkPingHealth(hostname: string, timeoutMs: number = 5000
         }
         
         const result = await ping.promise.probe(host, config)
-        const responseTime = result.time === 'unknown' ? Date.now() - startTime : parseFloat(result.time)
+        const responseTime = result.time === 'unknown' ? Date.now() - startTime : parseFloat(String(result.time))
         
         if (result.alive) {
           return {

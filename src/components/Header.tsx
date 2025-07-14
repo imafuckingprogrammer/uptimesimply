@@ -4,7 +4,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { getTrialDaysRemaining, hasActiveSubscription } from '@/lib/auth'
 import { 
@@ -82,8 +81,6 @@ export function Header() {
                 </Link>
               </nav>
             )}
-            
-            <ThemeToggle />
             
             {user ? (
               <div className="flex items-center gap-3">

@@ -20,7 +20,7 @@ export async function checkAndNotifySLABreaches(monitor: Monitor): Promise<void>
     // Get recent uptime checks for the monitor
     const { startDate, endDate } = getDateRangeForPeriod('monthly')
     
-    const { data: checks, error } = await supabaseAdmin
+    const { data: checks, error } = await supabaseAdmin!
       .from('uptime_checks')
       .select('status, checked_at, response_time, location')
       .eq('monitor_id', monitor.id)
@@ -34,7 +34,7 @@ export async function checkAndNotifySLABreaches(monitor: Monitor): Promise<void>
     }
 
     // Get incident data for accurate downtime calculation
-    const { data: incidents, error: incidentsError } = await supabaseAdmin
+    const { data: incidents, error: incidentsError } = await supabaseAdmin!
       .from('incidents')
       .select('started_at, ended_at, duration_minutes, resolved')
       .eq('monitor_id', monitor.id)
@@ -136,7 +136,7 @@ async function shouldSendSLANotification(monitorId: string, breaches: SLACalcula
     // Check if we've sent an SLA notification in the last 24 hours
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
     
-    const { data: recentNotifications, error } = await supabaseAdmin
+    const { data: recentNotifications, error } = await supabaseAdmin!
       .from('sla_notifications') // Assuming this table exists
       .select('id')
       .eq('monitor_id', monitorId)
@@ -175,7 +175,7 @@ async function logSLANotification(monitorId: string, breaches: SLACalculation[])
     // Try to insert into sla_notifications table
     // If table doesn't exist, we'll just log to console
     try {
-      await supabaseAdmin
+      await supabaseAdmin!
         .from('sla_notifications')
         .insert(logEntry)
     } catch (tableError) {
@@ -191,7 +191,7 @@ async function logSLANotification(monitorId: string, breaches: SLACalculation[])
  */
 export async function checkAllMonitorsSLA(): Promise<void> {
   try {
-    const { data: monitors, error } = await supabaseAdmin
+    const { data: monitors, error } = await supabaseAdmin!
       .from('monitors')
       .select('*')
       .eq('status', 'up') // Only check active monitors

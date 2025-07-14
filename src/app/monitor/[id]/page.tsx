@@ -119,7 +119,14 @@ export default function MonitorDetailsPage({ params }: PageProps) {
             </div>
             <p className="text-red-700">
               This service has been experiencing issues since{' '}
-              {new Date(stats.current_incident.started_at).toLocaleString()}
+              {new Date(stats.current_incident.started_at).toLocaleDateString('en-GB', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+              })}
             </p>
             {stats.current_incident.cause && (
               <p className="text-red-600 text-sm mt-1">

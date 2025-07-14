@@ -25,6 +25,36 @@ export async function signUp(email: string, password: string) {
       return { success: false, error: error.message }
     }
 
+    // If user is created and we have a session, ensure profile exists
+    if (data.user && data.session) {
+      try {
+        // Check if profile exists
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', data.user.id)
+          .single()
+
+        // If no profile exists, create one
+        if (!existingProfile) {
+          const profileData = {
+            id: data.user.id,
+            email: data.user.email!,
+            created_at: data.user.created_at || new Date().toISOString(),
+            subscription_status: 'trial',
+            trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+          }
+
+          await supabase
+            .from('profiles')
+            .insert(profileData)
+        }
+      } catch (profileError) {
+        console.warn('Profile creation during signup failed:', profileError)
+        // Don't fail signup if profile creation fails - it will be created later
+      }
+    }
+
     if (data.user && !data.session) {
       return { 
         success: true, 
@@ -103,7 +133,43 @@ export async function getCurrentUser(): Promise<{ success: boolean; user?: AuthU
       .eq('id', user.id)
       .single()
 
+    // If profile doesn't exist, create it
+    if (profileError && profileError.code === 'PGRST116') {
+      console.log('Profile not found, creating new profile for user:', user.id)
+      
+      const newProfile = {
+        id: user.id,
+        email: user.email!,
+        created_at: user.created_at || new Date().toISOString(),
+        subscription_status: 'trial',
+        trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+      }
+
+      const { data: createdProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert(newProfile)
+        .select()
+        .single()
+
+      if (createError) {
+        console.error('Failed to create profile:', createError)
+        return { success: false, error: 'Failed to create user profile' }
+      }
+
+      return {
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email!,
+          created_at: createdProfile.created_at,
+          subscription_status: createdProfile.subscription_status,
+          trial_ends_at: createdProfile.trial_ends_at
+        }
+      }
+    }
+
     if (profileError) {
+      console.error('Profile fetch error:', profileError)
       return { success: false, error: 'Failed to fetch user profile' }
     }
 
@@ -118,6 +184,7 @@ export async function getCurrentUser(): Promise<{ success: boolean; user?: AuthU
       }
     }
   } catch (error: any) {
+    console.error('getCurrentUser error:', error)
     return { success: false, error: error.message }
   }
 }

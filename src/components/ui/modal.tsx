@@ -75,7 +75,9 @@ export function Modal({ isOpen, onClose, title, children, size = 'lg' }: ModalPr
           
           {/* Content */}
           <div className="overflow-y-auto max-h-[calc(85vh-80px)] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-            {children}
+            <div className="p-6">
+              {children}
+            </div>
           </div>
         </div>
       </div>

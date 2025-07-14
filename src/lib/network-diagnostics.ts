@@ -194,7 +194,7 @@ async function performTraceroute(hostname: string): Promise<TracerouteResult> {
           let totalTime = 0
           const startTime = Date.now()
           
-          const tracer = traceroute.trace(hostname)
+          const tracer = (traceroute as any).trace(hostname)
           
           tracer.on('hop', (hop: any) => {
             const hopTime = hop.rtt1 || hop.rtt2 || hop.rtt3 || 0

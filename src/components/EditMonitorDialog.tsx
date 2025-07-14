@@ -16,7 +16,7 @@ interface EditMonitorDialogProps {
     alert_email: string
     ssl_enabled: boolean
     domain_enabled: boolean
-    monitor_type: 'http' | 'ping' | 'port'
+    monitor_type: 'http' | 'ping' | 'port' | 'heartbeat'
     request_method: string
     request_headers: string
     auth_type: 'none' | 'basic' | 'bearer' | 'header'
@@ -43,7 +43,7 @@ export function EditMonitorDialog({ monitor, isOpen, onClose, onSave }: EditMoni
     alert_email: '',
     ssl_enabled: true,
     domain_enabled: true,
-    monitor_type: 'http' as 'http' | 'ping' | 'port',
+    monitor_type: 'http' as 'http' | 'ping' | 'port' | 'heartbeat',
     request_method: 'GET',
     request_headers: '',
     auth_type: 'none' as 'none' | 'basic' | 'bearer' | 'header',
@@ -66,7 +66,7 @@ export function EditMonitorDialog({ monitor, isOpen, onClose, onSave }: EditMoni
         alert_email: monitor.alert_email || '',
         ssl_enabled: monitor.ssl_enabled !== false,
         domain_enabled: monitor.domain_enabled !== false,
-        monitor_type: monitor.monitor_type || 'http',
+        monitor_type: (monitor.monitor_type || 'http') as 'http' | 'ping' | 'port' | 'heartbeat',
         request_method: monitor.request_method || 'GET',
         request_headers: monitor.request_headers || '',
         auth_type: monitor.auth_type || 'none',

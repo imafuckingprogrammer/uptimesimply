@@ -27,10 +27,10 @@ export async function checkSSLCertificate(hostname: string, port: number = 443):
     if (basicResult.certificate_valid) {
       try {
         const sslLabsResult = await analyzeSSLWithSSLLabs(hostname)
-        if (sslLabsResult.success && sslLabsResult.grade) {
+        if (sslLabsResult.grade) {
           enhancedResult.ssl_labs_grade = sslLabsResult.grade
-          enhancedResult.ssl_labs_errors = sslLabsResult.errors || []
-          enhancedResult.ssl_labs_warnings = sslLabsResult.warnings || []
+          enhancedResult.ssl_labs_errors = sslLabsResult.vulnerabilities || []
+          enhancedResult.ssl_labs_warnings = sslLabsResult.has_warnings ? ['SSL configuration has warnings'] : []
           
           // Convert grade to performance score
           const gradeToScore: Record<string, number> = {

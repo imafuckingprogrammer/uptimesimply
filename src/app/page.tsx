@@ -32,18 +32,18 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <div className="relative bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="relative bg-gradient-to-br from-blue-50 via-white to-indigo-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-6">
               <Shield className="h-12 w-12 text-blue-600" />
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white">SimpleUptime</h1>
+              <h1 className="text-4xl font-bold text-gray-900">SimpleUptime</h1>
             </div>
-            <h2 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
+            <h2 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
               Website Monitoring
               <span className="block text-blue-600">Made Simple</span>
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
               Monitor your websites, APIs, and services with instant alerts. Get detailed uptime statistics, 
               SSL monitoring, and comprehensive incident reports from multiple global locations.
             </p>
@@ -63,7 +63,7 @@ export default function LandingPage() {
             </div>
 
             {/* Trust Indicators */}
-            <div className="flex items-center justify-center gap-8 text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center justify-center gap-8 text-sm text-gray-500">
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-green-500" />
                 <span>14-day free trial</span>
@@ -82,13 +82,13 @@ export default function LandingPage() {
       </div>
 
       {/* Features Section */}
-      <div className="py-20 bg-white dark:bg-gray-800">
+      <div className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Everything you need to monitor your services
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Comprehensive monitoring tools designed to keep your websites and applications running smoothly.
             </p>
           </div>
@@ -101,7 +101,7 @@ export default function LandingPage() {
                 <CardTitle>Multi-Location Monitoring</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 dark:text-gray-300">
+                <p className="text-gray-600">
                   Check your sites from 5 global locations every 5 minutes. Only alert when multiple locations confirm downtime.
                 </p>
               </CardContent>
@@ -114,7 +114,7 @@ export default function LandingPage() {
                 <CardTitle>Instant Alerts</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 dark:text-gray-300">
+                <p className="text-gray-600">
                   Get notified via email, Slack, Discord, SMS, or custom webhooks the moment your site goes down.
                 </p>
               </CardContent>
@@ -127,7 +127,7 @@ export default function LandingPage() {
                 <CardTitle>SSL Certificate Monitoring</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 dark:text-gray-300">
+                <p className="text-gray-600">
                   Monitor SSL certificates, get security grades, and receive alerts before certificates expire.
                 </p>
               </CardContent>
@@ -140,7 +140,7 @@ export default function LandingPage() {
                 <CardTitle>Heartbeat Monitoring</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 dark:text-gray-300">
+                <p className="text-gray-600">
                   Monitor cron jobs, background tasks, and server processes with simple HTTP requests.
                 </p>
               </CardContent>
@@ -153,7 +153,7 @@ export default function LandingPage() {
                 <CardTitle>Advanced Analytics</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 dark:text-gray-300">
+                <p className="text-gray-600">
                   Detailed uptime reports, response time trends, and SLA monitoring with comprehensive dashboards.
                 </p>
               </CardContent>
@@ -166,7 +166,7 @@ export default function LandingPage() {
                 <CardTitle>Public Status Pages</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 dark:text-gray-300">
+                <p className="text-gray-600">
                   Share beautiful status pages with your customers. Show real-time uptime and incident updates.
                 </p>
               </CardContent>
@@ -176,54 +176,54 @@ export default function LandingPage() {
       </div>
 
       {/* Monitoring Types */}
-      <div className="py-20 bg-gray-50 dark:bg-gray-900">
+      <div className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Monitor Everything
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               From simple websites to complex APIs, we support all types of monitoring.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="text-center">
-              <div className="bg-blue-100 dark:bg-blue-900 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Globe className="h-8 w-8 text-blue-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">HTTP/HTTPS</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <h3 className="font-semibold text-gray-900 mb-2">HTTP/HTTPS</h3>
+              <p className="text-sm text-gray-600">
                 Monitor websites, APIs, and web services with custom headers and authentication.
               </p>
             </div>
 
             <div className="text-center">
-              <div className="bg-green-100 dark:bg-green-900 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Activity className="h-8 w-8 text-green-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Ping</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <h3 className="font-semibold text-gray-900 mb-2">Ping</h3>
+              <p className="text-sm text-gray-600">
                 Real ICMP ping monitoring to check basic connectivity and network latency.
               </p>
             </div>
 
             <div className="text-center">
-              <div className="bg-purple-100 dark:bg-purple-900 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Zap className="h-8 w-8 text-purple-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Port</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <h3 className="font-semibold text-gray-900 mb-2">Port</h3>
+              <p className="text-sm text-gray-600">
                 Monitor TCP/UDP ports for databases, mail servers, and custom services.
               </p>
             </div>
 
             <div className="text-center">
-              <div className="bg-pink-100 dark:bg-pink-900 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="bg-pink-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Heart className="h-8 w-8 text-pink-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Heartbeat</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <h3 className="font-semibold text-gray-900 mb-2">Heartbeat</h3>
+              <p className="text-sm text-gray-600">
                 Monitor scheduled tasks, cron jobs, and background processes.
               </p>
             </div>
@@ -232,13 +232,13 @@ export default function LandingPage() {
       </div>
 
       {/* Pricing Section */}
-      <div className="py-20 bg-white dark:bg-gray-800">
+      <div className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Simple, Transparent Pricing
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               Start free and scale as you grow. No hidden fees, no long-term contracts.
             </p>
           </div>
@@ -248,10 +248,10 @@ export default function LandingPage() {
             <Card className={`relative ${activePlan === 'starter' ? 'ring-2 ring-blue-500' : ''}`}>
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl">Starter</CardTitle>
-                <div className="text-4xl font-bold text-gray-900 dark:text-white">
+                <div className="text-4xl font-bold text-gray-900">
                   Free
                 </div>
-                <p className="text-gray-600 dark:text-gray-400">Perfect for getting started</p>
+                <p className="text-gray-600">Perfect for getting started</p>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 mb-6">
@@ -287,11 +287,11 @@ export default function LandingPage() {
               </Badge>
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl">Pro</CardTitle>
-                <div className="text-4xl font-bold text-gray-900 dark:text-white">
+                <div className="text-4xl font-bold text-gray-900">
                   $19
-                  <span className="text-lg font-normal text-gray-600 dark:text-gray-400">/month</span>
+                  <span className="text-lg font-normal text-gray-600">/month</span>
                 </div>
-                <p className="text-gray-600 dark:text-gray-400">For growing businesses</p>
+                <p className="text-gray-600">For growing businesses</p>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 mb-6">
@@ -332,10 +332,10 @@ export default function LandingPage() {
             <Card className={`relative ${activePlan === 'enterprise' ? 'ring-2 ring-blue-500' : ''}`}>
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl">Enterprise</CardTitle>
-                <div className="text-4xl font-bold text-gray-900 dark:text-white">
+                <div className="text-4xl font-bold text-gray-900">
                   Custom
                 </div>
-                <p className="text-gray-600 dark:text-gray-400">For large organizations</p>
+                <p className="text-gray-600">For large organizations</p>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 mb-6">

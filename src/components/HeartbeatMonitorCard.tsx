@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { StatusIndicator } from '@/components/StatusIndicator'
 import { formatUptime, formatDuration } from '@/lib/utils'
-import { Trash2, Heart, Clock, Copy, Code2, Settings, BarChart3 } from 'lucide-react'
+import { Trash2, Heart, Clock, Copy, Code2, Settings, Activity } from 'lucide-react'
 
 interface HeartbeatMonitorCardProps {
   monitor: Monitor
@@ -94,174 +94,160 @@ export function HeartbeatMonitorCard({ monitor, stats, onDelete, onEdit }: Heart
               <Heart className="h-4 w-4 text-pink-500" />
               <span className="truncate">{monitor.name}</span>
             </CardTitle>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge variant="outline" className="text-xs">
-                Heartbeat Monitor
-              </Badge>
-              <span className="text-xs text-muted-foreground">
-                Every {monitor.heartbeat_interval || 60}s
-              </span>
-            </div>
-            {monitor.description && (
-              <p className="text-sm text-muted-foreground mt-1 truncate">
-                {monitor.description}
-              </p>
-            )}
+            <p className="text-sm text-muted-foreground mt-1">
+              Heartbeat Monitor • Expected every {monitor.heartbeat_interval || 60}s
+            </p>
           </div>
-          <div className="flex items-center gap-1 ml-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleViewDetails}
-              className="h-8 w-8"
-            >
-              <BarChart3 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowInstructions(!showInstructions)}
-              className="h-8 w-8"
-            >
-              <Code2 className="h-4 w-4" />
-            </Button>
+          <div className="flex items-center gap-1 ml-4">
             {onEdit && (
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 onClick={handleEdit}
-                className="h-8 w-8"
+                className="h-8 w-8 p-0"
               >
                 <Settings className="h-4 w-4" />
               </Button>
             )}
             <Button
               variant="ghost"
-              size="icon"
+              size="sm"
+              onClick={handleViewDetails}
+              className="h-8 w-8 p-0"
+            >
+              <Activity className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleDelete}
               disabled={isDeleting}
-              className="h-8 w-8 text-red-600 hover:text-red-700"
+              className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </CardHeader>
-      
+
       <CardContent className="pt-0">
-        {stats ? (
-          <div className="space-y-4">
-            {/* Uptime Stats */}
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="text-lg font-semibold text-green-600">
-                  {formatUptime(stats.uptime_24h)}
-                </div>
-                <div className="text-xs text-muted-foreground">24h</div>
-              </div>
-              <div>
-                <div className="text-lg font-semibold text-green-600">
-                  {formatUptime(stats.uptime_7d)}
-                </div>
-                <div className="text-xs text-muted-foreground">7d</div>
-              </div>
-              <div>
-                <div className="text-lg font-semibold text-green-600">
-                  {formatUptime(stats.uptime_30d)}
-                </div>
-                <div className="text-xs text-muted-foreground">30d</div>
+        <div className="space-y-4">
+          {/* Status and Last Heartbeat */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Status</p>
+              <div className="flex items-center gap-2 mt-1">
+                <StatusIndicator status={monitor.status} size="sm" />
+                <span className="text-sm font-medium capitalize">{monitor.status}</span>
               </div>
             </div>
-
-            {/* Last Heartbeat */}
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                <span className="text-muted-foreground">Last heartbeat:</span>
-              </div>
-              <span className={`font-medium ${lastHeartbeatStatus.color}`}>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Last Heartbeat</p>
+              <p className={`text-sm font-medium mt-1 ${lastHeartbeatStatus.color}`}>
                 {lastHeartbeatStatus.text}
-              </span>
+              </p>
             </div>
+          </div>
 
-            {/* Current Incident */}
-            {stats.current_incident && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                <div className="text-sm font-medium text-red-800">
-                  Missing Heartbeats
-                </div>
-                <div className="text-xs text-red-600 mt-1">
-                  Started {new Date(stats.current_incident.started_at).toLocaleString()}
-                </div>
-                {stats.current_incident.cause && (
-                  <div className="text-xs text-red-600 mt-1">
-                    {stats.current_incident.cause}
+          {/* Uptime Stats */}
+          {stats && (
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <p className="text-sm font-medium text-muted-foreground">24h Uptime</p>
+                <p className="text-lg font-bold text-green-600">
+                  {stats.uptime_24h !== null ? formatUptime(stats.uptime_24h) : '-%'}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-muted-foreground">7d Uptime</p>
+                <p className="text-lg font-bold text-green-600">
+                  {stats.uptime_7d !== null ? formatUptime(stats.uptime_7d) : '-%'}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-muted-foreground">Incidents</p>
+                <p className="text-lg font-bold">
+                  {stats.total_incidents || 0}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Heartbeat Instructions */}
+          <div className="border-t pt-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium">Heartbeat Instructions</h4>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowInstructions(!showInstructions)}
+                className="h-6 text-xs"
+              >
+                {showInstructions ? 'Hide' : 'Show'}
+              </Button>
+            </div>
+            
+            {showInstructions && (
+              <div className="mt-3 space-y-3 text-sm">
+                <div>
+                  <span className="font-medium">Heartbeat URL:</span>
+                  <div className="flex items-center gap-1 mt-1">
+                    <code className="bg-muted px-2 py-1 rounded text-xs flex-1 break-all">
+                      {getHeartbeatUrl()}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(getHeartbeatUrl())}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
                   </div>
-                )}
+                </div>
+                
+                <div>
+                  <span className="font-medium">HTTP Method:</span>
+                  <code className="bg-muted px-2 py-1 rounded text-xs ml-2">POST</code>
+                </div>
+                
+                <div>
+                  <span className="font-medium">cURL Example:</span>
+                  <div className="flex items-center gap-1 mt-1">
+                    <code className="bg-muted px-2 py-1 rounded text-xs flex-1 break-all">
+                      {`curl -X POST ${getHeartbeatUrl()} -H "Content-Type: application/json" -d '{"status": "up"}'`}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(`curl -X POST ${getHeartbeatUrl()} -H "Content-Type: application/json" -d '{"status": "up"}'`)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <div>
+                  <span className="font-medium">Request Body (JSON):</span>
+                  <div className="flex items-center gap-1 mt-1">
+                    <code className="bg-muted px-2 py-1 rounded text-xs flex-1">
+                      {`{"status": "up", "message": "optional", "response_time": 100}`}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(`{"status": "up", "message": "optional", "response_time": 100}`)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
-        ) : (
-          <div className="text-center text-muted-foreground">
-            <div className="text-lg font-semibold mb-2">Waiting for first heartbeat</div>
-            <div className="text-xs">Configure your service to send heartbeats</div>
-          </div>
-        )}
-
-        {/* Integration Instructions */}
-        {showInstructions && (
-          <div className="mt-4 p-3 bg-gray-50 rounded-md border">
-            <div className="text-sm font-medium mb-2">Integration Instructions</div>
-            
-            <div className="space-y-2 text-xs">
-              <div>
-                <span className="font-medium">Heartbeat URL:</span>
-                <div className="flex items-center gap-1 mt-1">
-                  <code className="bg-white px-2 py-1 rounded text-xs flex-1 break-all">
-                    {getHeartbeatUrl()}
-                  </code>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => copyToClipboard(getHeartbeatUrl())}
-                    className="h-6 w-6 p-0"
-                  >
-                    <Copy className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-
-              <div>
-                <span className="font-medium">cURL Example:</span>
-                <div className="flex items-center gap-1 mt-1">
-                  <code className="bg-white px-2 py-1 rounded text-xs flex-1 break-all">
-                    {`curl -X POST ${getHeartbeatUrl()} -H "Content-Type: application/json" -d '{"status": "up"}'`}
-                  </code>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => copyToClipboard(`curl -X POST ${getHeartbeatUrl()} -H "Content-Type: application/json" -d '{"status": "up"}'`)}
-                    className="h-6 w-6 p-0"
-                  >
-                    <Copy className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-
-              <div className="text-xs text-muted-foreground">
-                Send a POST request every {monitor.heartbeat_interval || 60} seconds with status "up". 
-                If no heartbeat is received within the grace period, an incident will be created.
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Last Checked */}
-        {monitor.last_checked && (
-          <div className="text-xs text-muted-foreground mt-4">
-            Last checked: {new Date(monitor.last_checked).toLocaleString()}
-          </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   )

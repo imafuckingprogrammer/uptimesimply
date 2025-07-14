@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase-client'
 import { LoadingState } from '@/components/ui/loader'
 import { Card, CardContent } from '@/components/ui/card'
 import { CheckCircle, XCircle, Shield } from 'lucide-react'
 
-export default function AuthCallbackPage() {
+function AuthCallbackForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
@@ -138,5 +138,13 @@ export default function AuthCallbackPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense fallback={<LoadingState size="lg" fullScreen />}>
+      <AuthCallbackForm />
+    </Suspense>
   )
 }

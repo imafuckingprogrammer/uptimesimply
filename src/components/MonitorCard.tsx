@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { StatusIndicator } from '@/components/StatusIndicator'
 import { formatUptime, formatResponseTime, formatDuration } from '@/lib/utils'
-import { Trash2, ExternalLink, Clock, TrendingUp, BarChart3, Settings, Shield, Target, Send, Loader2 } from 'lucide-react'
+import { Trash2, ExternalLink, Clock, TrendingUp, Activity, Settings, Shield, Target, Send, Loader2 } from 'lucide-react'
 
 interface MonitorCardProps {
   monitor: Monitor
@@ -65,7 +65,16 @@ export function MonitorCard({ monitor, stats, onDelete, onEdit }: MonitorCardPro
       const response = await fetch('/api/test-notifications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ monitorId: monitor.id })
+        body: JSON.stringify({ 
+          monitorId: monitor.id,
+          channels: {
+            email: !!monitor.alert_email,
+            slack: !!monitor.slack_webhook_url,
+            discord: !!monitor.discord_webhook_url,
+            sms: !!monitor.alert_sms,
+            webhook: !!monitor.webhook_url
+          }
+        })
       })
       
       const data = await response.json()
@@ -123,7 +132,7 @@ export function MonitorCard({ monitor, stats, onDelete, onEdit }: MonitorCardPro
               onClick={handleViewDetails}
               className="h-8 w-8"
             >
-              <BarChart3 className="h-4 w-4" />
+              <Activity className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"

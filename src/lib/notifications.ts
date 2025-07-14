@@ -321,37 +321,54 @@ export async function sendEmailNotification(
     const { sendDownAlert, sendUpAlert } = await import('./email')
     
     if (data.status === 'down') {
-      await sendDownAlert(
-        email,
-        data.monitorName,
-        data.monitorUrl,
-        data.errorMessage || 'Service is down',
-        data.statusCode
-      )
+      await sendDownAlert({
+        recipient: email,
+        monitorName: data.monitorName,
+        monitorUrl: data.monitorUrl,
+        alertType: 'down',
+        timestamp: new Date().toISOString(),
+        incident: {
+          id: `incident-${Date.now()}`,
+          cause: data.errorMessage || 'Service is down'
+        }
+      })
     } else if (data.status === 'up') {
-      await sendUpAlert(
-        email,
-        data.monitorName,
-        data.monitorUrl,
-        data.downtime || 'Unknown downtime'
-      )
+      await sendUpAlert({
+        recipient: email,
+        monitorName: data.monitorName,
+        monitorUrl: data.monitorUrl,
+        alertType: 'up',
+        timestamp: new Date().toISOString(),
+        incident: {
+          id: `incident-${Date.now()}`,
+          duration: data.downtime ? parseInt(data.downtime) : undefined
+        }
+      })
     } else if (data.status === 'test') {
       // Send a test email
-      await sendDownAlert(
-        email,
-        `[TEST] ${data.monitorName}`,
-        data.monitorUrl,
-        'This is a test notification from SimpleUptime',
-        200
-      )
+      await sendDownAlert({
+        recipient: email,
+        monitorName: `[TEST] ${data.monitorName}`,
+        monitorUrl: data.monitorUrl,
+        alertType: 'down',
+        timestamp: new Date().toISOString(),
+        incident: {
+          id: `test-${Date.now()}`,
+          cause: 'This is a test notification from SimpleUptime'
+        }
+      })
     } else if (data.status === 'sla_breach') {
-      await sendDownAlert(
-        email,
-        `[SLA BREACH] ${data.monitorName}`,
-        data.monitorUrl,
-        data.errorMessage || 'SLA targets not met',
-        null
-      )
+      await sendDownAlert({
+        recipient: email,
+        monitorName: `[SLA BREACH] ${data.monitorName}`,
+        monitorUrl: data.monitorUrl,
+        alertType: 'down',
+        timestamp: new Date().toISOString(),
+        incident: {
+          id: `sla-breach-${Date.now()}`,
+          cause: data.errorMessage || 'SLA targets not met'
+        }
+      })
     }
     
     return { success: true, deliveryId: `email-${Date.now()}` }

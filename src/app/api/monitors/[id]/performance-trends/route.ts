@@ -64,7 +64,7 @@ export async function GET(
     // Fetch incidents for the specified period
     const { data: incidents, error: incidentsError } = await supabaseAdmin
       .from('incidents')
-      .select('started_at, resolved_at')
+      .select('started_at, ended_at')
       .eq('monitor_id', monitorId)
       .gte('started_at', startDate.toISOString())
       .order('started_at', { ascending: true })

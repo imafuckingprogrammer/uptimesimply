@@ -236,11 +236,11 @@ const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours
 // Cleanup expired cache entries periodically
 setInterval(() => {
   const now = Date.now()
-  for (const [hostname, cached] of sslLabsCache.entries()) {
+  Array.from(sslLabsCache.entries()).forEach(([hostname, cached]) => {
     if (now - cached.timestamp > CACHE_DURATION) {
       sslLabsCache.delete(hostname)
     }
-  }
+  })
 }, 60 * 60 * 1000) // Cleanup every hour
 
 export async function analyzeSSLWithSSLLabs(hostname: string): Promise<SimpleSSLResult> {
@@ -309,7 +309,7 @@ export async function analyzeSSLWithSSLLabs(hostname: string): Promise<SimpleSSL
 
     console.log(`✅ SSL Labs analysis complete for ${hostname}. Grade: ${endpoint.grade}`)
 
-    const result: SimpleSSLResult = {
+    const sslResult: SimpleSSLResult = {
       certificate_valid: simpleInfo.certificate_valid,
       expires_at: simpleInfo.expires_at,
       days_until_expiry: simpleInfo.days_until_expiry,
@@ -325,9 +325,9 @@ export async function analyzeSSLWithSSLLabs(hostname: string): Promise<SimpleSSL
     }
 
     // Cache the successful result
-    sslLabsCache.set(hostname, { result, timestamp: Date.now() })
+    sslLabsCache.set(hostname, { result: sslResult, timestamp: Date.now() })
     
-    return result
+    return sslResult
 
   } catch (error: any) {
     console.error(`❌ SSL Labs analysis failed for ${hostname}:`, error.message)
