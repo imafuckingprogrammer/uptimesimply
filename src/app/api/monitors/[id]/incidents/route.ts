@@ -21,7 +21,7 @@ export async function GET(
 
     return NextResponse.json(incidents || [])
   } catch (error) {
-    console.error('Error fetching incidents:', error)
-    return NextResponse.json({ error: 'Failed to fetch incidents' }, { status: 500 })
+    const { createErrorResponse } = await import('@/lib/error-handler')
+    return createErrorResponse(error, 500, 'GET /api/monitors/[id]/incidents')
   }
 }

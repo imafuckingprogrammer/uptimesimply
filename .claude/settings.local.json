@@ -19,7 +19,9 @@
       "Bash(NEXT_PUBLIC_SUPABASE_URL=\"https://dansnqlhbpisyocxrotb.supabase.co\" SUPABASE_SERVICE_ROLE_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhbnNucWxoYnBpc3lvY3hyb3RiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjI4NTI5OSwiZXhwIjoyMDY3ODYxMjk5fQ.f9EjQdw4O2nh4ILgibqVJxAUW0hGhQR1La3KP9Q44WY\" node run-db-migration.js)",
       "Bash(sed:*)",
       "Bash(npm uninstall:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(psql:*)",
+      "Bash(cd:*)"
     ],
     "deny": []
   }

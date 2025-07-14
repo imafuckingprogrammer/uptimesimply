@@ -8,6 +8,37 @@ export async function POST(request: NextRequest) {
       throw new Error('Supabase admin client not available')
     }
 
+    // Try to fix the URL constraint for heartbeat monitoring
+    try {
+      // First, drop the existing constraint
+      await supabaseAdmin.rpc('execute_sql', {
+        sql: 'ALTER TABLE monitors DROP CONSTRAINT IF EXISTS check_url_format;'
+      })
+      
+      // Then add the new constraint that supports heartbeat URLs
+      await supabaseAdmin.rpc('execute_sql', {
+        sql: `ALTER TABLE monitors ADD CONSTRAINT check_url_format 
+              CHECK (url ~ '^(https?|heartbeat)://');`
+      })
+      
+      // Update any existing heartbeat monitors
+      await supabaseAdmin.rpc('execute_sql', {
+        sql: `UPDATE monitors 
+              SET url = 'heartbeat://monitor-' || id::text
+              WHERE monitor_type = 'heartbeat' 
+                AND url NOT LIKE 'heartbeat://%';`
+      })
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: 'URL constraint updated to support heartbeat:// URLs'
+      })
+      
+    } catch (constraintError: any) {
+      // If RPC doesn't work, fall back to testing columns
+      console.log('RPC approach failed, testing columns instead:', constraintError)
+    }
+
     // Test if enhanced columns already exist
     const { data: testData, error: testError } = await supabaseAdmin
       .from('monitors')
@@ -17,18 +48,18 @@ export async function POST(request: NextRequest) {
     if (!testError) {
       return NextResponse.json({ 
         success: true, 
-        message: 'Enhanced columns already exist!',
-        sample: testData 
+        message: 'Enhanced columns already exist! You may need to manually run the heartbeat URL constraint fix.',
+        sample: testData,
+        instructions: 'If heartbeat monitors fail, run: ALTER TABLE monitors DROP CONSTRAINT check_url_format; ALTER TABLE monitors ADD CONSTRAINT check_url_format CHECK (url ~ \'^(https?|heartbeat)://\');'
       })
     }
     
     // If columns don't exist, we need to run the migration manually
-    // For now, let's just report what needs to be done
     return NextResponse.json({ 
       success: false, 
       message: 'Enhanced columns missing. Please run the database migration manually.',
       error: testError.message,
-      instructions: 'Apply database-enhanced-monitoring-safe.sql to your Supabase database'
+      instructions: 'Apply database-enhanced-monitoring-safe.sql AND database-heartbeat-url-fix.sql to your Supabase database'
     })
     
   } catch (error: any) {

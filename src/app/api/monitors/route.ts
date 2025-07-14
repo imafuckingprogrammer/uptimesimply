@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { updateMonitorSSLInfo } from '@/lib/ssl-check'
+import { updateMonitorSSLInfo } from '@/lib/ssl-unified'
 
 const DEMO_USER_ID = '550e8400-e29b-41d4-a716-446655440000'
 
@@ -14,10 +14,14 @@ export async function GET() {
 
     if (error) throw error
 
-    return NextResponse.json(monitors)
+    // Decrypt sensitive data before returning
+    const { decryptMonitorSecrets } = await import('@/lib/encryption')
+    const decryptedMonitors = monitors?.map(monitor => decryptMonitorSecrets(monitor)) || []
+
+    return NextResponse.json(decryptedMonitors)
   } catch (error) {
-    console.error('Error fetching monitors:', error)
-    return NextResponse.json({ error: 'Failed to fetch monitors' }, { status: 500 })
+    const { createErrorResponse } = await import('@/lib/error-handler')
+    return createErrorResponse(error, 500, 'GET /api/monitors')
   }
 }
 
@@ -39,21 +43,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'URL and name are required' }, { status: 400 })
     }
 
+    // Encrypt sensitive data before storing
+    const { encryptMonitorSecrets } = await import('@/lib/encryption')
+    const monitorData = {
+      user_id: DEMO_USER_ID,
+      url,
+      name,
+      alert_email: alert_email || `demo@example.com`,
+      status: 'unknown',
+      ssl_enabled: ssl_enabled !== false, // Default to true
+      domain_enabled: domain_enabled !== false, // Default to true
+      slack_webhook_url: slack_webhook_url || null,
+      discord_webhook_url: discord_webhook_url || null,
+      alert_sms: alert_sms || null,
+      webhook_url: webhook_url || null,
+      secrets_encrypted: true
+    }
+    
+    const encryptedData = encryptMonitorSecrets(monitorData)
+    
     const { data: monitor, error } = await supabaseAdmin!
       .from('monitors')
-      .insert({
-        user_id: DEMO_USER_ID,
-        url,
-        name,
-        alert_email: alert_email || `demo@example.com`,
-        status: 'unknown',
-        ssl_enabled: ssl_enabled !== false, // Default to true
-        domain_enabled: domain_enabled !== false, // Default to true
-        slack_webhook_url: slack_webhook_url || null,
-        discord_webhook_url: discord_webhook_url || null,
-        alert_sms: alert_sms || null,
-        webhook_url: webhook_url || null
-      })
+      .insert(encryptedData)
       .select()
       .single()
 
@@ -69,7 +80,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(monitor, { status: 201 })
   } catch (error) {
-    console.error('Error creating monitor:', error)
-    return NextResponse.json({ error: 'Failed to create monitor' }, { status: 500 })
+    const { createErrorResponse } = await import('@/lib/error-handler')
+    return createErrorResponse(error, 500, 'POST /api/monitors')
   }
 }

@@ -20,8 +20,8 @@ export async function GET() {
 
     return NextResponse.json(monitors)
   } catch (error) {
-    console.error('Error fetching heartbeat monitors:', error)
-    return NextResponse.json({ error: 'Failed to fetch heartbeat monitors' }, { status: 500 })
+    const { createErrorResponse } = await import('@/lib/error-handler')
+    return createErrorResponse(error, 500, 'GET /api/heartbeat-monitors')
   }
 }
 
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       }
     }, { status: 201 })
   } catch (error) {
-    console.error('Error creating heartbeat monitor:', error)
-    return NextResponse.json({ error: 'Failed to create heartbeat monitor' }, { status: 500 })
+    const { createErrorResponse } = await import('@/lib/error-handler')
+    return createErrorResponse(error, 500, 'POST /api/heartbeat-monitors')
   }
 }

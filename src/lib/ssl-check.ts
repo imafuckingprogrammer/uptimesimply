@@ -1,3 +1,6 @@
+// DEPRECATED: Use ssl-unified.ts instead
+// This file is kept for backward compatibility but will be removed
+
 interface SSLCheckResult {
   success: boolean
   grade?: string

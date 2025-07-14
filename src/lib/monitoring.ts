@@ -87,12 +87,19 @@ export async function checkWebsiteHealth(config: MonitorConfig | string, timeout
       }
     }
     
-    return {
-      success: false,
-      status: 'error',
-      statusCode: null,
-      responseTime,
-      error: error.message || 'Network error'
+    const { logError, handleNetworkError } = await import('./error-handler')
+    
+    try {
+      handleNetworkError(error, 'Website health check')
+    } catch (handledError) {
+      const standardError = logError(handledError, 'checkWebsiteHealth')
+      return {
+        success: false,
+        status: 'error',
+        statusCode: null,
+        responseTime,
+        error: standardError.message
+      }
     }
   }
 }

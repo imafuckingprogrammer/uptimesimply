@@ -4,8 +4,10 @@ import { sendDownAlert, sendUpAlert, sendSlackAlert, sendDiscordAlert } from '@/
 import { checkWebsiteHealth, checkPingHealth, checkPortHealth } from '@/lib/monitoring'
 import { sendNotifications } from '@/lib/notifications'
 import { runNetworkDiagnostics, type NetworkDiagnostics } from '@/lib/network-diagnostics'
+import { cronLogger } from '@/lib/logger'
 
 const LOCATIONS = ['us-east', 'us-west', 'europe', 'asia-pacific', 'south-america']
+
 const USER_AGENTS = {
   'us-east': 'SimpleUptime/1.0 (US-East)',
   'us-west': 'SimpleUptime/1.0 (US-West)', 
@@ -69,12 +71,14 @@ async function checkMonitor(monitor: any, location: string) {
       status_code: result.statusCode,
       error_message: result.error
     }
-  } catch (error: any) {
+  } catch (error) {
+    const { logError } = await import('@/lib/error-handler')
+    const standardError = logError(error, 'Monitor check')
     return {
       status: 'error',
       response_time: 15000,
       status_code: null,
-      error_message: error.message || 'Monitor check failed'
+      error_message: standardError.message
     }
   }
 }
@@ -96,17 +100,21 @@ export async function POST(request: NextRequest) {
       throw new Error('Supabase admin client not available')
     }
 
-    // Get all active monitors
+    // Get all active monitors (excluding heartbeat monitors which are checked separately)
     const { data: monitors, error: monitorsError } = await supabaseAdmin
       .from('monitors')
       .select('*')
+      .neq('monitor_type', 'heartbeat')
 
     if (monitorsError) throw monitorsError
 
     const results = []
 
     for (const monitor of monitors || []) {
-      console.log(`Checking ${monitor.name} (${monitor.url})`)
+      cronLogger.info(`Checking ${monitor.name} (${monitor.url})`, {
+        monitorType: monitor.monitor_type || 'http',
+        monitorId: monitor.id
+      })
       
       // Check from all locations
       const locationResults = await Promise.all(
@@ -181,20 +189,53 @@ export async function POST(request: NextRequest) {
               .map(r => r.location)
             
             // Run diagnostics for failed locations (limit to prevent overload)
-            const diagnosticsPromises = failedLocations.slice(0, 2).map(async (location) => {
-              try {
-                console.log(`🔬 Running diagnostics for ${monitor.name} from ${location}`)
-                const diagnostics = await runNetworkDiagnostics(monitor.url, location)
-                await storeDiagnostics(incident.id, monitor.id, location, diagnostics)
-              } catch (error) {
-                console.error(`Failed to capture diagnostics for ${location}:`, error)
-              }
-            })
-            
-            // Don't wait for diagnostics to complete - run in background
-            Promise.all(diagnosticsPromises).catch(error => {
-              console.error('Diagnostics capture failed:', error)
-            })
+            if (failedLocations.length > 0) {
+              const diagnosticsPromises = failedLocations.slice(0, 2).map(async (location) => {
+                try {
+                  console.log(`🔬 Running diagnostics for ${monitor.name} from ${location}`)
+                  const diagnostics = await runNetworkDiagnostics(monitor.url, location)
+                  
+                  // Validate diagnostics data before storing
+                  if (diagnostics && diagnostics.timestamp) {
+                    await storeDiagnostics(incident.id, monitor.id, location, diagnostics)
+                    console.log(`✅ Diagnostics captured for ${location}`)
+                  } else {
+                    console.warn(`⚠️ Invalid diagnostics data for ${location}`)
+                  }
+                } catch (error: any) {
+                  console.error(`❌ Failed to capture diagnostics for ${location}:`, error.message)
+                  // Store basic error info even if full diagnostics fail
+                  try {
+                    await supabaseAdmin!
+                      .from('incident_diagnostics')
+                      .insert({
+                        incident_id: incident.id,
+                        monitor_id: monitor.id,
+                        location,
+                        captured_at: new Date().toISOString(),
+                        dns_resolution: { success: false, dns_errors: [error.message] },
+                        traceroute: { success: false, total_hops: 0, total_time_ms: 0, hops: [], packet_loss: 100, max_timeout_reached: true },
+                        http_details: { error_details: error.message, status_code: 0, total_time_ms: 0 },
+                        ssl_verification: { certificate_valid: false, ssl_errors: [error.message] },
+                        geo_analysis: { server_location: { country: 'Unknown', city: 'Unknown' } },
+                        network_path: JSON.stringify([]),
+                        performance_metrics: { total_time_ms: 0, dns_time_ms: 0, connect_time_ms: 0, ssl_time_ms: 0, first_byte_time_ms: 0 }
+                      })
+                    console.log(`📝 Stored error diagnostic for ${location}`)
+                  } catch (storageError) {
+                    console.error(`Failed to store error diagnostic for ${location}:`, storageError)
+                  }
+                }
+              })
+              
+              // Run diagnostics in background with timeout
+              Promise.race([
+                Promise.all(diagnosticsPromises),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Diagnostics timeout')), 60000))
+              ]).catch(error => {
+                console.error('⏰ Diagnostics capture timed out or failed:', error.message)
+              })
+            }
           }
           
           // Send notifications via all configured channels
@@ -346,8 +387,8 @@ export async function POST(request: NextRequest) {
       results 
     })
   } catch (error) {
-    console.error('Error in website check cron:', error)
-    return NextResponse.json({ error: 'Failed to check websites' }, { status: 500 })
+    const { createErrorResponse } = await import('@/lib/error-handler')
+    return createErrorResponse(error, 500, 'POST /api/cron/check-websites')
   }
 }
 

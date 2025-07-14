@@ -57,6 +57,19 @@ export async function POST(request: NextRequest) {
             })
             .eq('id', monitor.id)
 
+          // Create uptime_check entry for missed heartbeat (for unified reporting/SLA)
+          await supabaseAdmin
+            .from('uptime_checks')
+            .insert({
+              monitor_id: monitor.id,
+              location: 'heartbeat',
+              status: 'timeout',
+              response_time: null,
+              status_code: null,
+              error_message: `Missed heartbeat (expected every ${heartbeatInterval}s)`,
+              checked_at: now.toISOString()
+            })
+
           // Create incident for missed heartbeat
           const { data: incident, error: incidentError } = await supabaseAdmin
             .from('incidents')
@@ -110,11 +123,12 @@ export async function POST(request: NextRequest) {
           })
         }
       } catch (error) {
-        console.error(`Error checking heartbeat for ${monitor.name}:`, error)
+        const { logError } = await import('@/lib/error-handler')
+        const standardError = logError(error, `Heartbeat check for ${monitor.name}`)
         results.push({
           monitor: monitor.name,
           status: 'error',
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: standardError.message
         })
       }
     }
@@ -137,7 +151,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error in heartbeat check cron:', error)
-    return NextResponse.json({ error: 'Failed to check heartbeats' }, { status: 500 })
+    const { createErrorResponse } = await import('@/lib/error-handler')
+    return createErrorResponse(error, 500, 'POST /api/cron/check-heartbeats')
   }
 }

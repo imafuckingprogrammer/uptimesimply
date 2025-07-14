@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET(
   request: NextRequest,
@@ -31,8 +31,15 @@ export async function GET(
         startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     }
 
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database connection not available' },
+        { status: 500 }
+      )
+    }
+
     // Fetch monitoring checks with response times for the specified period
-    const { data: checks, error } = await supabase
+    const { data: checks, error } = await supabaseAdmin
       .from('uptime_checks')
       .select('response_time')
       .eq('monitor_id', monitorId)

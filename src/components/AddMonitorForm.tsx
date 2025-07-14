@@ -1,3 +1,6 @@
+// DEPRECATED: This component is not used anywhere in the application
+// The app uses AddMonitorModal instead. This file can be safely deleted.
+
 'use client'
 
 import { useState } from 'react'

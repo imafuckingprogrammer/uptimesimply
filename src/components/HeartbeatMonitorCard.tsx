@@ -235,7 +235,7 @@ export function HeartbeatMonitorCard({ monitor, stats, onDelete, onEdit }: Heart
                 <span className="font-medium">cURL Example:</span>
                 <div className="flex items-center gap-1 mt-1">
                   <code className="bg-white px-2 py-1 rounded text-xs flex-1 break-all">
-                    curl -X POST {getHeartbeatUrl()} -H "Content-Type: application/json" -d '{"status": "up"}'
+                    {`curl -X POST ${getHeartbeatUrl()} -H "Content-Type: application/json" -d '{"status": "up"}'`}
                   </code>
                   <Button
                     variant="ghost"

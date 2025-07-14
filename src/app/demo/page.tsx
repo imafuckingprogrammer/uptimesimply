@@ -20,11 +20,14 @@ export default function Dashboard() {
     try {
       const response = await fetch('/api/monitors')
       const data = await response.json()
-      setMonitors(Array.isArray(data) ? data : [])
+      // Filter out heartbeat monitors since they're displayed separately
+      const nonHeartbeatMonitors = Array.isArray(data) 
+        ? data.filter((monitor: Monitor) => monitor.monitor_type !== 'heartbeat')
+        : []
+      setMonitors(nonHeartbeatMonitors)
       
-      // Fetch stats for each monitor
-      const monitorArray = Array.isArray(data) ? data : []
-      const statsPromises = monitorArray.map(async (monitor: Monitor) => {
+      // Fetch stats for each non-heartbeat monitor
+      const statsPromises = nonHeartbeatMonitors.map(async (monitor: Monitor) => {
         const statsResponse = await fetch(`/api/monitors/${monitor.id}/stats`)
         const statsData = await statsResponse.json()
         return [monitor.id, statsData]

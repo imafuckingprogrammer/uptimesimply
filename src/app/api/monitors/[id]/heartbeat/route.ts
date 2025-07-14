@@ -50,21 +50,47 @@ export async function POST(
 
     const now = new Date()
 
-    // Record the heartbeat
-    const { error: heartbeatError } = await supabaseAdmin
-      .from('heartbeats')
-      .insert({
-        monitor_id: monitorId,
-        status: status === 'up' ? 'up' : 'down',
-        message: message || null,
-        response_time: response_time || null,
-        metadata: metadata,
-        source_ip: clientIP,
-        received_at: now.toISOString()
-      })
+    // Record the heartbeat in both heartbeats table and uptime_checks for consistency
+    const heartbeatPromises = [
+      // Store in heartbeats table (detailed heartbeat data)
+      supabaseAdmin
+        .from('heartbeats')
+        .insert({
+          monitor_id: monitorId,
+          status: status === 'up' ? 'up' : 'down',
+          message: message || null,
+          response_time: response_time || null,
+          metadata: metadata,
+          source_ip: clientIP,
+          received_at: now.toISOString()
+        }),
+      
+      // Store in uptime_checks table (unified monitoring data for SLA/reporting)
+      supabaseAdmin
+        .from('uptime_checks')
+        .insert({
+          monitor_id: monitorId,
+          location: 'heartbeat',
+          status: status === 'up' ? 'up' : 'down',
+          response_time: response_time || null,
+          status_code: null, // Not applicable for heartbeats
+          error_message: status === 'down' ? message : null,
+          checked_at: now.toISOString()
+        })
+    ]
 
-    if (heartbeatError) {
-      console.error('Failed to record heartbeat:', heartbeatError)
+    const [heartbeatResult, uptimeCheckResult] = await Promise.allSettled(heartbeatPromises)
+
+    if (heartbeatResult.status === 'rejected') {
+      console.error('Failed to record heartbeat:', heartbeatResult.reason)
+    }
+    
+    if (uptimeCheckResult.status === 'rejected') {
+      console.error('Failed to record uptime check for heartbeat:', uptimeCheckResult.reason)
+    }
+
+    // Continue if at least one storage succeeded
+    if (heartbeatResult.status === 'rejected' && uptimeCheckResult.status === 'rejected') {
       return NextResponse.json(
         { error: 'Failed to record heartbeat' },
         { status: 500 }
@@ -133,12 +159,9 @@ export async function POST(
       next_expected: new Date(now.getTime() + (monitor.heartbeat_interval || 60) * 1000).toISOString()
     })
 
-  } catch (error: any) {
-    console.error('Error processing heartbeat:', error)
-    return NextResponse.json(
-      { error: 'Failed to process heartbeat' },
-      { status: 500 }
-    )
+  } catch (error) {
+    const { createErrorResponse } = await import('@/lib/error-handler')
+    return createErrorResponse(error, 500, 'POST /api/monitors/[id]/heartbeat')
   }
 }
 
@@ -220,11 +243,8 @@ requests.post('${heartbeatUrl}', json={
       }
     })
 
-  } catch (error: any) {
-    console.error('Error getting heartbeat info:', error)
-    return NextResponse.json(
-      { error: 'Failed to get heartbeat information' },
-      { status: 500 }
-    )
+  } catch (error) {
+    const { createErrorResponse } = await import('@/lib/error-handler')
+    return createErrorResponse(error, 500, 'GET /api/monitors/[id]/heartbeat')
   }
 }

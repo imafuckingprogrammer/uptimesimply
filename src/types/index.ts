@@ -22,7 +22,7 @@ export interface Monitor {
   domain_registrar?: string
   domain_days_until_expiry?: number
   // Enhanced monitoring features
-  monitor_type?: 'http' | 'ping' | 'port'
+  monitor_type?: 'http' | 'ping' | 'port' | 'heartbeat'
   request_method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD'
   request_headers?: string // JSON string of headers
   request_body?: string
@@ -36,6 +36,9 @@ export interface Monitor {
   discord_webhook_url?: string
   webhook_url?: string
   alert_sms?: string
+  // Heartbeat monitoring fields
+  heartbeat_interval?: number // seconds between expected heartbeats
+  last_heartbeat?: string // ISO timestamp of last heartbeat received
   // Status page visibility
   status_page_public?: boolean
 }
@@ -43,7 +46,7 @@ export interface Monitor {
 export interface UptimeCheck {
   id: string
   monitor_id: string
-  location: 'us-east' | 'us-west' | 'europe'
+  location: 'us-east' | 'us-west' | 'europe' | 'asia-pacific' | 'south-america' | 'heartbeat'
   status: 'up' | 'down' | 'timeout' | 'error'
   response_time?: number
   status_code?: number

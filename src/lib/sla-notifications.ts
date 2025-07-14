@@ -33,7 +33,20 @@ export async function checkAndNotifySLABreaches(monitor: Monitor): Promise<void>
       return
     }
 
-    // Calculate SLA for multiple targets
+    // Get incident data for accurate downtime calculation
+    const { data: incidents, error: incidentsError } = await supabaseAdmin
+      .from('incidents')
+      .select('started_at, ended_at, duration_minutes, resolved')
+      .eq('monitor_id', monitor.id)
+      .gte('started_at', startDate.toISOString())
+      .lte('started_at', endDate.toISOString())
+      .order('started_at', { ascending: true })
+
+    if (incidentsError) {
+      console.warn(`Failed to fetch incidents for monitor ${monitor.id}:`, incidentsError)
+    }
+
+    // Calculate SLA for multiple targets with incident data
     const slaCalculations = calculateMultipleSLAs(
       checks.map(check => ({
         status: check.status,
@@ -43,7 +56,8 @@ export async function checkAndNotifySLABreaches(monitor: Monitor): Promise<void>
       SLA_TARGETS,
       'monthly',
       startDate,
-      endDate
+      endDate,
+      incidents || []
     )
 
     // Detect breaches

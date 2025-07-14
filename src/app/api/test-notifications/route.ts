@@ -112,12 +112,9 @@ export async function POST(request: NextRequest) {
       nextTestAvailable: new Date(now + RATE_LIMIT_MINUTES * 60 * 1000).toISOString()
     })
 
-  } catch (error: any) {
-    console.error('Error sending test notifications:', error)
-    return NextResponse.json(
-      { error: 'Failed to send test notifications' },
-      { status: 500 }
-    )
+  } catch (error) {
+    const { createErrorResponse } = await import('@/lib/error-handler')
+    return createErrorResponse(error, 500, 'POST /api/test-notifications')
   }
 }
 

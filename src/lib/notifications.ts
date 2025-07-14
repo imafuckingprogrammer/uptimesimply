@@ -1,5 +1,6 @@
 // Enhanced notification system supporting multiple channels
 import { Monitor } from '@/types'
+import { notificationLogger } from './logger'
 
 interface NotificationData {
   monitorName: string
@@ -204,13 +205,12 @@ export async function sendSMSNotification(
   data: NotificationData
 ): Promise<NotificationResult> {
   try {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID
-    const authToken = process.env.TWILIO_AUTH_TOKEN
-    const fromNumber = process.env.TWILIO_PHONE_NUMBER
-
-    if (!accountSid || !authToken || !fromNumber) {
-      throw new Error('Twilio credentials not configured. Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER environment variables.')
-    }
+    const { requireEnvironmentVariables, COMMON_ENV_CONFIGS } = await import('./env-validation')
+    requireEnvironmentVariables(COMMON_ENV_CONFIGS.twilio)
+    
+    const accountSid = process.env.TWILIO_ACCOUNT_SID!
+    const authToken = process.env.TWILIO_AUTH_TOKEN!
+    const fromNumber = process.env.TWILIO_PHONE_NUMBER!
 
     // Initialize Twilio client
     const twilio = await import('twilio')
@@ -311,6 +311,95 @@ export async function sendWebhookNotification(
   }
 }
 
+// Email notification
+export async function sendEmailNotification(
+  email: string,
+  data: NotificationData
+): Promise<NotificationResult> {
+  try {
+    // Use the email library that's already imported in other files
+    const { sendDownAlert, sendUpAlert } = await import('./email')
+    
+    if (data.status === 'down') {
+      await sendDownAlert(
+        email,
+        data.monitorName,
+        data.monitorUrl,
+        data.errorMessage || 'Service is down',
+        data.statusCode
+      )
+    } else if (data.status === 'up') {
+      await sendUpAlert(
+        email,
+        data.monitorName,
+        data.monitorUrl,
+        data.downtime || 'Unknown downtime'
+      )
+    } else if (data.status === 'test') {
+      // Send a test email
+      await sendDownAlert(
+        email,
+        `[TEST] ${data.monitorName}`,
+        data.monitorUrl,
+        'This is a test notification from SimpleUptime',
+        200
+      )
+    } else if (data.status === 'sla_breach') {
+      await sendDownAlert(
+        email,
+        `[SLA BREACH] ${data.monitorName}`,
+        data.monitorUrl,
+        data.errorMessage || 'SLA targets not met',
+        null
+      )
+    }
+    
+    return { success: true, deliveryId: `email-${Date.now()}` }
+  } catch (error: any) {
+    const { logError } = await import('./error-handler')
+    const standardError = logError(error, 'Email notification')
+    return { success: false, error: standardError.message }
+  }
+}
+
+// Enhanced notification dispatcher with retry logic
+async function sendNotificationWithRetry(
+  sendFn: () => Promise<NotificationResult>,
+  channel: string,
+  maxRetries: number = 3
+): Promise<NotificationResult> {
+  let lastError: any
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await sendFn()
+      if (result.success) {
+        if (attempt > 1) {
+          notificationLogger.info(`${channel} notification succeeded on attempt ${attempt}`, {
+            channel,
+            attempt,
+            type: 'retry_success'
+          })
+        }
+        return result
+      }
+      lastError = new Error(result.error || 'Unknown error')
+    } catch (error: any) {
+      lastError = error
+      console.warn(`⚠️ ${channel} notification attempt ${attempt} failed:`, error.message)
+    }
+    
+    // Wait before retry (exponential backoff)
+    if (attempt < maxRetries) {
+      const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000) // Max 10s
+      await new Promise(resolve => setTimeout(resolve, delay))
+    }
+  }
+  
+  console.error(`❌ ${channel} notification failed after ${maxRetries} attempts:`, lastError)
+  return { success: false, error: lastError.message }
+}
+
 // Main notification dispatcher
 export async function sendNotifications(
   monitor: Monitor,
@@ -318,13 +407,16 @@ export async function sendNotifications(
 ): Promise<{ success: boolean; results: Record<string, NotificationResult> }> {
   const results: Record<string, NotificationResult> = {}
   
-  // Check all possible notification channels
+  // Check all possible notification channels with retry logic
   const channelPromises: Promise<void>[] = []
   
   // Slack notification
   if (monitor.slack_webhook_url) {
     channelPromises.push(
-      sendSlackNotification(monitor.slack_webhook_url, data).then(result => {
+      sendNotificationWithRetry(
+        () => sendSlackNotification(monitor.slack_webhook_url!, data),
+        'Slack'
+      ).then(result => {
         results.slack = result
       })
     )
@@ -333,7 +425,10 @@ export async function sendNotifications(
   // Discord notification  
   if (monitor.discord_webhook_url) {
     channelPromises.push(
-      sendDiscordNotification(monitor.discord_webhook_url, data).then(result => {
+      sendNotificationWithRetry(
+        () => sendDiscordNotification(monitor.discord_webhook_url!, data),
+        'Discord'
+      ).then(result => {
         results.discord = result
       })
     )
@@ -342,7 +437,10 @@ export async function sendNotifications(
   // SMS notification
   if (monitor.alert_sms) {
     channelPromises.push(
-      sendSMSNotification(monitor.alert_sms, data).then(result => {
+      sendNotificationWithRetry(
+        () => sendSMSNotification(monitor.alert_sms!, data),
+        'SMS'
+      ).then(result => {
         results.sms = result
       })
     )
@@ -351,19 +449,35 @@ export async function sendNotifications(
   // Webhook notification
   if (monitor.webhook_url) {
     channelPromises.push(
-      sendWebhookNotification(monitor.webhook_url, data).then(result => {
+      sendNotificationWithRetry(
+        () => sendWebhookNotification(monitor.webhook_url!, data),
+        'Webhook'
+      ).then(result => {
         results.webhook = result
       })
     )
   }
   
-  // Email notification (mark as available if configured)
+  // Email notification
   if (monitor.alert_email) {
-    results.email = { success: true }
+    channelPromises.push(
+      sendNotificationWithRetry(
+        () => sendEmailNotification(monitor.alert_email!, data),
+        'Email'
+      ).then(result => {
+        results.email = result
+      })
+    )
   }
   
-  // Wait for all notifications to complete
-  await Promise.all(channelPromises)
+  // Wait for all notifications to complete (with error handling)
+  await Promise.allSettled(channelPromises.map(async (promise) => {
+    try {
+      await promise
+    } catch (error) {
+      console.error('Notification channel error:', error)
+    }
+  }))
   
   // Check if at least one notification succeeded
   const overallSuccess = Object.values(results).some(result => result.success)

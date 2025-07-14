@@ -95,12 +95,9 @@ export async function GET(
 
     return NextResponse.json(response)
 
-  } catch (error: any) {
-    console.error('Error calculating SLA:', error)
-    return NextResponse.json(
-      { error: 'Failed to calculate SLA' },
-      { status: 500 }
-    )
+  } catch (error) {
+    const { createErrorResponse } = await import('@/lib/error-handler')
+    return createErrorResponse(error, 500, 'GET /api/monitors/[id]/sla')
   }
 }
 
@@ -203,11 +200,8 @@ export async function POST(
 
     return NextResponse.json(response)
 
-  } catch (error: any) {
-    console.error('Error calculating custom SLA:', error)
-    return NextResponse.json(
-      { error: 'Failed to calculate custom SLA' },
-      { status: 500 }
-    )
+  } catch (error) {
+    const { createErrorResponse } = await import('@/lib/error-handler')
+    return createErrorResponse(error, 500, 'POST /api/monitors/[id]/sla')
   }
 }

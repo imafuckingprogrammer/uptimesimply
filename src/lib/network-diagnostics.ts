@@ -416,7 +416,7 @@ async function performHTTPDiagnostics(url: string): Promise<HTTPDiagnostics> {
 async function performSSLDiagnostics(hostname: string): Promise<SSLDiagnostics> {
   try {
     // Use our comprehensive SSL monitoring system
-    const { checkSSLCertificate } = await import('./ssl-monitoring')
+    const { checkSSLCertificate } = await import('./ssl-unified')
     const sslResult = await checkSSLCertificate(hostname, 443)
     
     return {

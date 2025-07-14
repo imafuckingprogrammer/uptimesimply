@@ -23,8 +23,8 @@ export async function GET(
 
     return NextResponse.json(monitor)
   } catch (error) {
-    console.error('Error fetching monitor:', error)
-    return NextResponse.json({ error: 'Failed to fetch monitor' }, { status: 500 })
+    const { createErrorResponse } = await import('@/lib/error-handler')
+    return createErrorResponse(error, 500, 'GET /api/monitors/[id]')
   }
 }
 
@@ -99,8 +99,8 @@ export async function PUT(
 
     return NextResponse.json(monitor)
   } catch (error) {
-    console.error('Error updating monitor:', error)
-    return NextResponse.json({ error: 'Failed to update monitor' }, { status: 500 })
+    const { createErrorResponse } = await import('@/lib/error-handler')
+    return createErrorResponse(error, 500, 'PUT /api/monitors/[id]')
   }
 }
 
@@ -121,7 +121,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting monitor:', error)
-    return NextResponse.json({ error: 'Failed to delete monitor' }, { status: 500 })
+    const { createErrorResponse } = await import('@/lib/error-handler')
+    return createErrorResponse(error, 500, 'DELETE /api/monitors/[id]')
   }
 }

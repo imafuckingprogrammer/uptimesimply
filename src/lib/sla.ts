@@ -90,7 +90,8 @@ export function calculateSLA(
   target: SLATarget,
   period: keyof typeof TIME_PERIODS,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  incidents?: Array<{ started_at: string; ended_at?: string; duration_minutes?: number; resolved: boolean }>
 ): SLACalculation {
   const totalChecks = checks.length
   const upChecks = checks.filter(check => check.status === 'up').length
@@ -99,16 +100,38 @@ export function calculateSLA(
   // Calculate actual uptime percentage
   const actualUptime = totalChecks > 0 ? (upChecks / totalChecks) * 100 : 0
 
-  // Calculate downtime in minutes (estimate based on check frequency)
-  // Assume checks are evenly distributed over the period
-  const periodMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60)
-  const estimatedDowntime = (downChecks / totalChecks) * periodMinutes
+  // Calculate actual downtime using incident data when available
+  let actualDowntime: number
+  
+  if (incidents && incidents.length > 0) {
+    // Use real incident data for accurate downtime calculation
+    actualDowntime = incidents.reduce((total, incident) => {
+      if (incident.duration_minutes) {
+        return total + incident.duration_minutes
+      } else if (incident.ended_at) {
+        // Calculate duration from start/end times
+        const start = new Date(incident.started_at).getTime()
+        const end = new Date(incident.ended_at).getTime()
+        return total + (end - start) / (1000 * 60)
+      } else if (!incident.resolved) {
+        // Ongoing incident - calculate from start to now
+        const start = new Date(incident.started_at).getTime()
+        const now = Math.min(Date.now(), endDate.getTime())
+        return total + (now - start) / (1000 * 60)
+      }
+      return total
+    }, 0)
+  } else {
+    // Fallback: estimate downtime based on check frequency
+    const periodMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60)
+    actualDowntime = (downChecks / totalChecks) * periodMinutes
+  }
 
   // Calculate allowed downtime
   const allowedDowntime = calculateAllowedDowntime(target, period)
 
   // Calculate remaining budget
-  const remainingBudget = allowedDowntime - estimatedDowntime
+  const remainingBudget = allowedDowntime - actualDowntime
 
   return {
     target,
@@ -119,7 +142,7 @@ export function calculateSLA(
     targetUptime: target.percentage,
     met: actualUptime >= target.percentage,
     allowedDowntime,
-    actualDowntime: Math.round(estimatedDowntime),
+    actualDowntime: Math.round(actualDowntime),
     remainingBudget: Math.round(remainingBudget),
     totalChecks,
     upChecks,
@@ -145,14 +168,15 @@ export function calculateMultipleSLAs(
   targets: SLATarget[],
   period: keyof typeof TIME_PERIODS,
   startDate?: Date,
-  endDate?: Date
+  endDate?: Date,
+  incidents?: Array<{ started_at: string; ended_at?: string; duration_minutes?: number; resolved: boolean }>
 ): SLACalculation[] {
   const { startDate: start, endDate: end } = startDate && endDate 
     ? { startDate, endDate }
     : getDateRangeForPeriod(period)
 
   return targets.map(target => 
-    calculateSLA(checks, target, period, start, end)
+    calculateSLA(checks, target, period, start, end, incidents)
   )
 }
 

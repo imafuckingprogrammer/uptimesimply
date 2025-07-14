@@ -1,3 +1,5 @@
+// DEPRECATED: Use ssl-unified.ts instead
+// This file is kept for backward compatibility but will be removed
 // Simpler SSL monitoring using HTTPS requests
 export interface SSLCheckResult {
   certificate_valid: boolean

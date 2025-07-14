@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { checkSSLCertificate, checkDomainExpiration, extractDomainFromUrl, extractRootDomain, extractPortFromUrl } from '@/lib/ssl-monitoring-simple'
-import { analyzeSSLWithSSLLabs } from '@/lib/ssl-labs'
+import { checkSSLCertificate, checkDomainExpiration, extractDomainFromUrl, extractRootDomain, extractPortFromUrl } from '@/lib/ssl-unified'
 import { sendSSLAlert, sendDomainAlert } from '@/lib/email'
 
 export async function GET() {

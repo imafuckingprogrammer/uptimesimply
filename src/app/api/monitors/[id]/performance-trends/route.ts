@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET(
   request: NextRequest,
@@ -38,8 +38,15 @@ export async function GET(
         intervalMinutes = 24 * 60
     }
 
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database connection not available' },
+        { status: 500 }
+      )
+    }
+
     // Fetch monitoring checks for the specified period
-    const { data: checks, error: checksError } = await supabase
+    const { data: checks, error: checksError } = await supabaseAdmin
       .from('uptime_checks')
       .select('status, response_time, checked_at')
       .eq('monitor_id', monitorId)
@@ -55,7 +62,7 @@ export async function GET(
     }
 
     // Fetch incidents for the specified period
-    const { data: incidents, error: incidentsError } = await supabase
+    const { data: incidents, error: incidentsError } = await supabaseAdmin
       .from('incidents')
       .select('started_at, resolved_at')
       .eq('monitor_id', monitorId)
